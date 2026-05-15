@@ -1,9 +1,18 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+
+    <meta charset="UTF-8">
+    <!-- 1. jQuery d'abord -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    
+    <!-- 2. Canvas Gauges -->
     <script src="//cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/radial/gauge.min.js"></script>
+    
+    <!-- 3. Tes fichiers locaux -->
     <link rel="stylesheet" type="text/css" href="/css/flight-indicators.css" />
     <script src="/js/flight-indicators.js"></script>
+
 
     <meta charset="UTF-8">
     <title>Cockpit MSFS - Évolué</title>
@@ -33,11 +42,11 @@
     <h1>TABLEAU DE BORD</h1>
 
     <div class="instruments">
-        <div class="ecran"><span>ALT (ft)</span><span class="valeur" id="altitude">---</span></div>
+        <!-- <div class="ecran"><span>ALT (ft)</span><span class="valeur" id="altitude">---</span></div>
         <div class="ecran"><span>CAP (°)</span><span class="valeur" id="cap">---</span></div>
         <div class="ecran"><span>INC ROULIS (°)</span><span class="valeur" id="roulis">---</span></div>
         <div class="ecran"><span>INC TANGAGE (°)</span><span class="valeur" id="tangage">---</span></div>
-        <div class="ecran"><span>VIT VERT (fpm)</span><span class="valeur" id="vitesse_verticale">---</span></div>
+        <div class="ecran"><span>VIT VERT (fpm)</span><span class="valeur" id="vitesse_verticale">---</span></div> -->
 
         <div class="ecran-gauge">
             <canvas id="gauge-vitesse"></canvas>
@@ -48,6 +57,10 @@
         <div class="ecran-gauge">
             <canvas id="gauge-carburant"></canvas>
         </div>
+        <div class="ecran-gauge">
+            <canvas id="gauge-oil"></canvas>
+        </div>
+        
 
     </div>
     
@@ -82,18 +95,75 @@
     </div>
 
     
-    <div id="attitude"></div>
+    <div class="instruments">
+        <!-- ... tes autres écrans ... -->
+
+        <!-- Nouveaux indicateurs d'aviation -->
+        <div id="instrument-attitude"></div>
+        <div id="instrument-cap"></div>
+        <div id="instrument-vitesse"></div>
+        <div id="instrument-vertical"></div>
+        <div id="instrument-altitude"></div>
+        <div id="instrument-turn_coordinator"></div>
+
+    </div>
 
     
     
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
-
+        
         const socket = io();
         const tabGauges = {};
 
+        // Stockage pour les indicateurs de vol (attitude, cap, altimètre, etc.)
+        const tabPlaneGauges = {};
+
+        /**
+         * @param idElement : l'ID de la div HTML
+         * @param type : FlightIndicators.TYPE_ATTITUDE, TYPE_HEADING, etc.
+         * @param options : un objet d'options (taille, affichage du cadre, etc.)
+         */
+        function creerPlaneGauge(idElement, typeCle, options = {}) {
+            const el = document.getElementById(idElement);
+            if (el) {
+                // Mapping pour convertir tes textes en constantes réelles
+                const typesMap = {
+                    'attitude': FlightIndicators.TYPE_ATTITUDE,
+                    'heading':  FlightIndicators.TYPE_HEADING,
+                    'airspeed': FlightIndicators.TYPE_AIRSPEED,
+                    'altimeter': FlightIndicators.TYPE_ALTIMETER,
+                    'vertical': FlightIndicators.TYPE_VERTICAL_SPEED,
+                    'turn_coordinator': FlightIndicators.TYPE_TURN_COORDINATOR
+                };
+
+                const typeConstant = typesMap[typeCle];
+
+                // Création de l'objet via "new" comme dans ton test réussi
+                tabPlaneGauges[idElement] = new FlightIndicators(
+                    el,
+                    typeConstant,
+                    options
+                );
+                
+                // On affiche le cadre par défaut si ce n'est pas précisé
+                if(options.showBox !== false) tabPlaneGauges[idElement].showBox();
+                
+                console.log(`Instrument ${typeCle} initialisé.`);
+            }
+        }
+
+        // Initialisation des indicateurs spécialisés
+        creerPlaneGauge('instrument-attitude', 'attitude');
+        creerPlaneGauge('instrument-cap', 'heading');
+        creerPlaneGauge('instrument-vertical', 'vertical')
+        creerPlaneGauge('instrument-altitude', 'altimeter')
+        creerPlaneGauge('instrument-turn_coordinator', 'turn_coordinator')
+
+        
         // Fonction de création de Gauges
+
         function creerGauge(idElement, titre, max, unites) {
             tabGauges[idElement] = new RadialGauge({
                 renderTo: idElement,
@@ -118,6 +188,7 @@
         creerGauge('gauge-vitesse', 'Vitesse', 300, 'kts');
         creerGauge('gauge-regime', 'RPM', 100, '%');
         creerGauge('gauge-carburant', 'Fuel', 100, '%');
+        creerGauge('gauge-oil', 'Oil', 100, '%');
        
 
 
@@ -133,6 +204,27 @@
                 if(tabGauges[`gauge-${cle}`]){
                     tabGauges[`gauge-${cle}`].value = donnees[cle];
                 }
+                // Mise à jour de l'horizon artificiel (Roulis + Tangage)
+                if (tabPlaneGauges['instrument-attitude']) {
+                    tabPlaneGauges['instrument-attitude'].updateRoll(donnees.roulis);
+                    tabPlaneGauges['instrument-attitude'].updatePitch(donnees.tangage);
+                }
+
+                // Mise à jour du cap
+                if (cle === 'cap' && tabPlaneGauges['instrument-cap']) {
+                    tabPlaneGauges['instrument-cap'].updateHeading(donnees.cap);
+                }
+
+                // Mise à jour de la vitesse verticale
+                if (cle === 'vitesse_verticale' && tabPlaneGauges['instrument-vertical']) {
+                    tabPlaneGauges['instrument-vertical'].updateVerticalSpeed(donnees.vitesse_verticale);
+                }
+                // Mise à jour de l'altitude
+                if (cle === 'altitude' && tabPlaneGauges['instrument-altitude']) {
+                    tabPlaneGauges['instrument-altitude'].updateAltitude(donnees.altitude);
+                }
+
+
             });
         });
         // Fonction appelée à chaque fois qu'on bouge un slider
@@ -149,15 +241,6 @@
             });
         }
 
-        // declares the placeholder
-        const attitudeElement = document.querySelector("#attitude")
-
-        // creates an FlightIndicators' object
-        const attitude = new FlightIndicators(
-            attitudeElement,
-            FlightIndicators.TYPE_ATTITUDE
-        )
-        attitude.showBox();
 
     </script>
 </body>
