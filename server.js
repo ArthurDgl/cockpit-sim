@@ -9,73 +9,81 @@ const io = new Server(server);
 
 const path = require('path');
 
-const express = require('express');
-const { Server } = require('socket.io');
-// Import de la librairie SimConnect pour Node
-const { SimConnect } = require('une-librairie-simconnect-npm');
+// CORRECTION ICI : On utilise bien des majuscules pour importer la classe
+const { SimConnect } = require('node-simconnect');
 
 app.use(express.static(__dirname));
 
-//app.use('/flight-indicators', express.static(path.join(__dirname, 'flight-indicators')));
-
-// Gestion des connexions WebSocket
+// Gestion des connexions WebSocket avec l'interface HTML
 io.on('connection', (socket) => {
-    console.log('✈️ Un nouveau cockpit est connecté !');
+    console.log('💻 Un navigateur web est connecté au tableau de bord !');
 
-    // Écoute des actions venant des boutons de l'interface HTML
     socket.on('actionPilote', (data) => {
         console.log(`Action reçue depuis le HTML : ${data.commande}`);
-        // Plus tard, c'est ici que vous ferez le lien vers votre code C/C++ pour MSFS
+        // Ici, on pourra envoyer l'ordre à MSFS via sim.sendEvent(...)
     });
 
-    let fauxEtatTrain = 0;
-    const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-    // Simulation de données de vol (à remplacer plus tard par les vraies données C++)
-    const simulateur = setInterval(() => {
-        fauxEtatTrain = (fauxEtatTrain + 1) % 3;
-        const donneesDeVol = {
-            altitude: randomBetween(30000, 30500),
-            vitesse: randomBetween(240, 260),
-            roulis: randomBetween(-5, 5),
-            tangage: randomBetween(-5, 5),
-            vitesse_verticale: randomBetween(-100, 100),
-            regime: randomBetween(70, 95),
-            carburant: randomBetween(0, 100),
-            cap: randomBetween(0, 359), // Le cap s'ajoutera tout seul au HTML !
-            etatTrain: fauxEtatTrain // Faux état du train d'atterrissage (0 = rentré, 1 = en transition, 2 = sorti)
-
-        };
-        // Envoi des données vers client.html
-        socket.emit('donneesInstruments', donneesDeVol);
-    }, 1000); // Mise à jour toutes les secondes
-
-    // Gestion de la déconnexion
     socket.on('disconnect', () => {
-        console.log('🔌 Cockpit déconnecté.');
-        clearInterval(simulateur);
+        console.log('🔌 Tableau de bord web déconnecté.');
     });
 });
 
-const sim = new SimConnect();
-sim.connect('Mon Cockpit Web');
+// --- LE PONT AVEC FLIGHT SIMULATOR ---
 
-sim.on('connect', () => {
-    console.log('✅ Connecté à Flight Simulator !');
+// Création de l'instance avec la bonne majuscule
+// --- LE PONT AVEC FLIGHT SIMULATOR ---
+
+// On importe le module directement (sans accolades)
+const simConnect = require('node-simconnect');
+
+// Pas de "new", on appelle la fonction "open" directement
+simConnect.open('Cockpit E3', (name, version) => {
+    console.log(`✅ Connecté avec succès à Flight Simulator ! (Moteur: ${name})`);
     
-    // Demande de données en boucle
-    sim.requestDataOnSimObject([
+    // Demande des vraies données à MSFS
+    simConnect.requestDataOnSimObject([
         ['INDICATED ALTITUDE', 'Feet'],
-        ['AIRSPEED INDICATED', 'Knots']
+        ['AIRSPEED INDICATED', 'Knots'],
+        ['PLANE PITCH DEGREES', 'Degrees'],
+        ['PLANE BANK DEGREES', 'Degrees'],
+        ['VERTICAL SPEED', 'Feet per minute'],
+        ['GENERAL ENG RPM:1', 'Rpm'],
+        ['FUEL TOTAL QUANTITY', 'Gallons'],
+        ['PLANE HEADING DEGREES MAGNETIC', 'Degrees']
     ], (donnees) => {
-        // Envoi direct à l'interface HTML dès réception
-        io.emit('donneesInstruments', {
-            altitude: donnees['INDICATED ALTITUDE'],
-            vitesse: donnees['AIRSPEED INDICATED']
-        });
-    });
+        
+        // On formate les vraies données pour notre HTML
+        const donneesDeVol = {
+            altitude: Math.round(donnees['INDICATED ALTITUDE']),
+            vitesse: Math.round(donnees['AIRSPEED INDICATED']),
+            tangage: Math.round(donnees['PLANE PITCH DEGREES']),
+            roulis: Math.round(donnees['PLANE BANK DEGREES']),
+            vitesse_verticale: Math.round(donnees['VERTICAL SPEED']),
+            regime: Math.round(donnees['GENERAL ENG RPM:1']),
+            carburant: Math.round(donnees['FUEL TOTAL QUANTITY']),
+            cap: Math.round(donnees['PLANE HEADING DEGREES MAGNETIC'])
+        };
+
+        // Envoi direct à l'interface HTML
+        io.emit('donneesInstruments', donneesDeVol);
+
+    }, 
+    simConnect.objectId.USER,    // Cible : l'avion du joueur
+    simConnect.period.SIM_FRAME, // Fréquence : à chaque frame du simulateur
+    0);
+
+}, () => {
+    // Si MSFS est fermé manuellement
+    console.log('🔌 Simulateur fermé.');
+}, (exception) => {
+    // S'il y a une erreur interne dans les variables demandées
+    console.log('⚠️ Exception SimConnect :', exception);
+}, (error) => {
+    // Si MSFS n'est pas lancé au moment du démarrage de server.js
+    console.log('⚠️ Erreur de connexion (Flight Simulator est bien lancé ?) :', error);
 });
 
-// Démarrage du serveur
+// Démarrage du serveur web
 server.listen(3000, () => {
-    console.log('Serveur démarré ! Ouvrez http://localhost:3000 dans votre navigateur.');
+    console.log('🚀 Serveur démarré ! Ouvrez http://localhost:3000 dans votre navigateur.');
 });
