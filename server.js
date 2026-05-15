@@ -9,14 +9,11 @@ const io = new Server(server);
 
 const path = require('path');
 
-const express = require('express');
-const { Server } = require('socket.io');
-// Import de la librairie SimConnect pour Node
-const { SimConnect } = require('une-librairie-simconnect-npm');
+
 
 app.use(express.static(__dirname));
 
-//app.use('/flight-indicators', express.static(path.join(__dirname, 'flight-indicators')));
+
 
 // Gestion des connexions WebSocket
 io.on('connection', (socket) => {
@@ -42,7 +39,9 @@ io.on('connection', (socket) => {
             regime: randomBetween(70, 95),
             carburant: randomBetween(0, 100),
             cap: randomBetween(0, 359), // Le cap s'ajoutera tout seul au HTML !
-            etatTrain: fauxEtatTrain // Faux état du train d'atterrissage (0 = rentré, 1 = en transition, 2 = sorti)
+            etatTrain: fauxEtatTrain, // Faux état du train d'atterrissage (0 = rentré, 1 = en transition, 2 = sorti)
+            oil: randomBetween(0,100),
+            turn_coordinator: randomBetween(-10,10)
 
         };
         // Envoi des données vers client.html
@@ -56,26 +55,8 @@ io.on('connection', (socket) => {
     });
 });
 
-const sim = new SimConnect();
-sim.connect('Mon Cockpit Web');
-
-sim.on('connect', () => {
-    console.log('✅ Connecté à Flight Simulator !');
-    
-    // Demande de données en boucle
-    sim.requestDataOnSimObject([
-        ['INDICATED ALTITUDE', 'Feet'],
-        ['AIRSPEED INDICATED', 'Knots']
-    ], (donnees) => {
-        // Envoi direct à l'interface HTML dès réception
-        io.emit('donneesInstruments', {
-            altitude: donnees['INDICATED ALTITUDE'],
-            vitesse: donnees['AIRSPEED INDICATED']
-        });
-    });
-});
-
 // Démarrage du serveur
 server.listen(3000, () => {
     console.log('Serveur démarré ! Ouvrez http://localhost:3000 dans votre navigateur.');
 });
+

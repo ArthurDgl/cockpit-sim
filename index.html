@@ -13,6 +13,8 @@
     <link rel="stylesheet" type="text/css" href="/css/flight-indicators.css" />
     <script src="/js/flight-indicators.js"></script>
 
+    <!-- 4. Gauges Custom -->
+    <script src="/js/Gauges.js"></script>
 
     <meta charset="UTF-8">
     <title>Cockpit MSFS - Évolué</title>
@@ -108,7 +110,14 @@
 
     </div>
 
-    
+    <canvas id="mon-horloge" width="200" height="200"></canvas>
+    <!-- Dans ta zone instruments -->
+    <canvas id="boussole-1" width="200" height="200"></canvas>
+    <canvas id="boussole-2" width="200" height="200"></canvas>
+
+
+
+
     
 
     <script src="/socket.io/socket.io.js"></script>
@@ -223,10 +232,27 @@
                 if (cle === 'altitude' && tabPlaneGauges['instrument-altitude']) {
                     tabPlaneGauges['instrument-altitude'].updateAltitude(donnees.altitude);
                 }
+                // Mise à jour du turn coordinator
+                if (cle === 'turn_coordinator' && tabPlaneGauges['instrument-turn_coordinator']) {
+                    tabPlaneGauges['instrument-turn_coordinator'].updateCoordinator(donnees.turn_coordinator);
+                }
 
 
             });
         });
+        
+
+        // 1. Initialisation
+        const maGaugeHorloge = new Horloge('mon-horloge', '#00ff00');
+
+        // 2. Mise à jour (Boucle)
+        function loop() {
+            maGaugeHorloge.update();
+            requestAnimationFrame(loop); 
+        }
+    
+        loop(); 
+
         // Fonction appelée à chaque fois qu'on bouge un slider
         function envoyerSlider(commandePilote, valeurCurseur) {
             // 1. Mettre à jour l'affichage sur la page web pour l'utilisateur
@@ -240,7 +266,18 @@
                 valeur: parseInt(valeurCurseur) 
             });
         }
+// 1. On crée les objets
+        const boussoleCap = new Boussole('boussole-1', 'CAP');
+        const boussoleAlt = new Boussole('boussole-2', 'ADF');
 
+        // 2. Dans ta fonction socket.on('donneesInstruments')
+        socket.on('donneesInstruments', (donnees) => {
+            // ... tes autres codes ...
+            
+            // On met à jour les boussoles avec le vrai cap reçu
+            boussoleCap.update(donnees.cap);
+            boussoleAlt.update(donnees.cap); // Ici tu pourras mettre une autre variable
+        });
 
     </script>
 </body>
