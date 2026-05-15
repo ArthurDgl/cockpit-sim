@@ -9,6 +9,11 @@ const io = new Server(server);
 
 const path = require('path');
 
+const express = require('express');
+const { Server } = require('socket.io');
+// Import de la librairie SimConnect pour Node
+const { SimConnect } = require('une-librairie-simconnect-npm');
+
 app.use(express.static(__dirname));
 
 //app.use('/flight-indicators', express.static(path.join(__dirname, 'flight-indicators')));
@@ -48,6 +53,25 @@ io.on('connection', (socket) => {
     socket.on('disconnect', () => {
         console.log('🔌 Cockpit déconnecté.');
         clearInterval(simulateur);
+    });
+});
+
+const sim = new SimConnect();
+sim.connect('Mon Cockpit Web');
+
+sim.on('connect', () => {
+    console.log('✅ Connecté à Flight Simulator !');
+    
+    // Demande de données en boucle
+    sim.requestDataOnSimObject([
+        ['INDICATED ALTITUDE', 'Feet'],
+        ['AIRSPEED INDICATED', 'Knots']
+    ], (donnees) => {
+        // Envoi direct à l'interface HTML dès réception
+        io.emit('donneesInstruments', {
+            altitude: donnees['INDICATED ALTITUDE'],
+            vitesse: donnees['AIRSPEED INDICATED']
+        });
     });
 });
 
