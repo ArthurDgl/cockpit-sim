@@ -1,63 +1,33 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-
     <meta charset="UTF-8">
-    <!-- 1. jQuery d'abord -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     
-    <!-- 2. Canvas Gauges -->
-    <script src="//cdn.rawgit.com/Mikhus/canvas-gauges/gh-pages/download/2.1.7/radial/gauge.min.js"></script>
+    <script src="/node_modules/canvas-gauges/gauge.min.js"></script>
     
-    <!-- 3. Tes fichiers locaux -->
     <link rel="stylesheet" type="text/css" href="/css/flight-indicators.css" />
     <script src="/js/flight-indicators.js"></script>
 
-    <!-- 4. Gauges Custom -->
-    <script src="/js/Gauges.js"></script>
+    <link rel="stylesheet" type="text/css" href="/custom/style.css" />
+    <script src="/custom/Gauges.js"></script>
+
+    <script src="/socket.io/socket.io.js"></script>
 
     <meta charset="UTF-8">
-    <title>Cockpit MSFS - Évolué</title>
-    <style>
-        body { background-color: #1a1a1a; color: #00ff00; font-family: monospace; display: flex; flex-direction: column; align-items: center; }
-        .instruments { display: flex; gap: 20px; margin-bottom: 30px; }
-        .ecran { border: 2px solid #333; background: #000; padding: 15px; border-radius: 8px; text-align: center; width: 120px; }
-        .valeur { font-size: 2em; font-weight: bold; display: block; margin-top: 10px; }
-        
-        /* Style pour la zone des sliders */
-        .panneau-controle { background: #222; padding: 20px; border-radius: 10px; border: 2px solid #444; width: 400px; }
-        .slider-groupe { margin-bottom: 20px; }
-        .slider-groupe label { display: flex; justify-content: space-between; margin-bottom: 5px; font-size: 1.2em; }
-        input[type="range"] { width: 100%; cursor: pointer; }
-
-        /* NOUVEAU : Style pour les voyants du train d'atterrissage */
-        .panneau-train { background: #111; padding: 15px; border-radius: 8px; text-align: center; margin-bottom: 25px; width: 80%; border: 1px solid #333; }
-        .voyant { width: 25px; height: 25px; border-radius: 50%; background-color: #222; border: 2px solid #000; display: inline-block; margin: 0 8px; box-shadow: inset 0 0 5px rgba(0,0,0,0.8); transition: background-color 0.2s; }
-        .voyant.vert { background-color: #00ff00; box-shadow: 0 0 15px #00ff00; }
-        .voyant.rouge { background-color: #ff0000; box-shadow: 0 0 15px #ff0000; }
-
-    </style>
+    <title>Immersive Cockpit Simulator</title>
 </head>
 
 <body>
-
-    <h1>TABLEAU DE BORD</h1>
-
     <div class="instruments">
-        <!-- <div class="ecran"><span>ALT (ft)</span><span class="valeur" id="altitude">---</span></div>
-        <div class="ecran"><span>CAP (°)</span><span class="valeur" id="cap">---</span></div>
-        <div class="ecran"><span>INC ROULIS (°)</span><span class="valeur" id="roulis">---</span></div>
-        <div class="ecran"><span>INC TANGAGE (°)</span><span class="valeur" id="tangage">---</span></div>
-        <div class="ecran"><span>VIT VERT (fpm)</span><span class="valeur" id="vitesse_verticale">---</span></div> -->
-
         <div class="ecran-gauge">
-            <canvas id="gauge-vitesse"></canvas>
+            <canvas id="gauge-airSpeed"></canvas>
         </div>
         <div class="ecran-gauge">
-            <canvas id="gauge-regime"></canvas>
+            <canvas id="gauge-engineSpeed"></canvas>
         </div>
         <div class="ecran-gauge">
-            <canvas id="gauge-carburant"></canvas>
+            <canvas id="gauge-fuel"></canvas>
         </div>
         <div class="ecran-gauge">
             <canvas id="gauge-oil"></canvas>
@@ -66,219 +36,40 @@
 
     </div>
     
-    <div class="panneau-controle">
-        <div class="panneau-train">
-            <div style="margin-bottom: 10px; font-weight: bold; color: #fff;">GEAR</div>
-            <div id="roue-gauche" class="voyant"></div>
-            <div id="roue-nez" class="voyant" style="transform: translateY(-10px);"></div>
-            <div id="roue-droite" class="voyant"></div>
-        </div>
-
-        <!-- Slider des Gaz -->
-        <div class="slider-groupe">
-            <label><span>Gaz (Throttle)</span> <span id="valeur-throttle">0%</span></label>
+    <div class="control-panel">
+        <div class="slider-group">
+            <label><span>Throttle</span> <span id="value-throttle">0%</span></label>
             <input type="range" id="slider-throttle" min="0" max="100" value="0" step="1" 
-                   oninput="envoyerSlider('THROTTLE', this.value)">
+                   oninput="sendPilotAction('THROTTLE', this.value)">
         </div>
 
-        <!-- Slider du Trim (souvent de -10 à +10) -->
-        <div class="slider-groupe">
-            <label><span>Trim (Profondeur)</span> <span id="valeur-trim">0</span></label>
+        <div class="slider-group">
+            <label><span>Elevator Trim</span> <span id="value-trim">0</span></label>
             <input type="range" id="slider-trim" min="-10" max="10" value="0" step="1" 
-                   oninput="envoyerSlider('TRIM', this.value)">
+                   oninput="sendPilotAction('TRIM', this.value)">
         </div>
 
-        <!-- Slider des Volets (souvent par crans : 0, 1, 2, 3) -->
-        <div class="slider-groupe">
-            <label><span>Volets (Flaps)</span> <span id="valeur-flaps">Cran 0</span></label>
+        <div class="slider-group">
+            <label><span>Flaps</span> <span id="value-flaps">0</span></label>
             <input type="range" id="slider-flaps" min="0" max="3" value="0" step="1" 
-                   oninput="envoyerSlider('FLAPS', this.value)">
+                   oninput="sendPilotAction('FLAPS', this.value)">
         </div>
     </div>
 
     
     <div class="instruments">
-        <!-- ... tes autres écrans ... -->
-
-        <!-- Nouveaux indicateurs d'aviation -->
         <div id="instrument-attitude"></div>
-        <div id="instrument-cap"></div>
+        <div id="instrument-heading"></div>
         <div id="instrument-vitesse"></div>
         <div id="instrument-vertical"></div>
         <div id="instrument-altitude"></div>
         <div id="instrument-turn_coordinator"></div>
-
     </div>
 
-    <canvas id="mon-horloge" width="200" height="200"></canvas>
-    <!-- Dans ta zone instruments -->
-    <canvas id="boussole-1" width="200" height="200"></canvas>
-    <canvas id="boussole-2" width="200" height="200"></canvas>
+    <canvas id="analog-clock" width="200" height="200"></canvas>
+    <canvas id="compass-1" width="200" height="200"></canvas>
+    <canvas id="compass-2" width="200" height="200"></canvas>
 
-
-
-
-    
-
-    <script src="/socket.io/socket.io.js"></script>
-    <script>
-        
-        const socket = io();
-        const tabGauges = {};
-
-        // Stockage pour les indicateurs de vol (attitude, cap, altimètre, etc.)
-        const tabPlaneGauges = {};
-
-        /**
-         * @param idElement : l'ID de la div HTML
-         * @param type : FlightIndicators.TYPE_ATTITUDE, TYPE_HEADING, etc.
-         * @param options : un objet d'options (taille, affichage du cadre, etc.)
-         */
-        function creerPlaneGauge(idElement, typeCle, options = {}) {
-            const el = document.getElementById(idElement);
-            if (el) {
-                // Mapping pour convertir tes textes en constantes réelles
-                const typesMap = {
-                    'attitude': FlightIndicators.TYPE_ATTITUDE,
-                    'heading':  FlightIndicators.TYPE_HEADING,
-                    'airspeed': FlightIndicators.TYPE_AIRSPEED,
-                    'altimeter': FlightIndicators.TYPE_ALTIMETER,
-                    'vertical': FlightIndicators.TYPE_VERTICAL_SPEED,
-                    'turn_coordinator': FlightIndicators.TYPE_TURN_COORDINATOR
-                };
-
-                const typeConstant = typesMap[typeCle];
-
-                // Création de l'objet via "new" comme dans ton test réussi
-                tabPlaneGauges[idElement] = new FlightIndicators(
-                    el,
-                    typeConstant,
-                    options
-                );
-                
-                // On affiche le cadre par défaut si ce n'est pas précisé
-                if(options.showBox !== false) tabPlaneGauges[idElement].showBox();
-                
-                console.log(`Instrument ${typeCle} initialisé.`);
-            }
-        }
-
-        // Initialisation des indicateurs spécialisés
-        creerPlaneGauge('instrument-attitude', 'attitude');
-        creerPlaneGauge('instrument-cap', 'heading');
-        creerPlaneGauge('instrument-vertical', 'vertical')
-        creerPlaneGauge('instrument-altitude', 'altimeter')
-        creerPlaneGauge('instrument-turn_coordinator', 'turn_coordinator')
-
-        
-        // Fonction de création de Gauges
-
-        function creerGauge(idElement, titre, max, unites) {
-            tabGauges[idElement] = new RadialGauge({
-                renderTo: idElement,
-                width: 200,
-                height: 200,
-                units: unites,
-                title: titre,
-                minValue: 0,
-                maxValue: max,
-                majorTicks: ["0", (max/4).toString(), (max/2).toString(), (max*3/4).toString(), max.toString()],
-                minorTicks: 2,
-                highlights: [{ from: max*0.8, to: max, color: 'rgba(255,0,0,.3)' }],
-                colorPlate: "#222",
-                colorNumbers: "#eee",
-                needleType: "arrow",
-                animatedValue: true,
-                animationDuration: 500
-            }).draw();
-        }
-
-        // Initialisation des Gauges (L'ID doit correspondre au Canvas)
-        creerGauge('gauge-vitesse', 'Vitesse', 300, 'kts');
-        creerGauge('gauge-regime', 'RPM', 100, '%');
-        creerGauge('gauge-carburant', 'Fuel', 100, '%');
-        creerGauge('gauge-oil', 'Oil', 100, '%');
-       
-
-
-        socket.on('donneesInstruments', (donnees) => {
-            // On parcourt chaque clé du message reçu (altitude, vitesse, etc.)
-            Object.keys(donnees).forEach(cle => {
-                const element = document.getElementById(cle);
-
-                // Si un élément HTML avec cet ID existe, on le met à jour
-                if (element) {
-                    element.innerText = donnees[cle];
-                }
-                if(tabGauges[`gauge-${cle}`]){
-                    tabGauges[`gauge-${cle}`].value = donnees[cle];
-                }
-                // Mise à jour de l'horizon artificiel (Roulis + Tangage)
-                if (tabPlaneGauges['instrument-attitude']) {
-                    tabPlaneGauges['instrument-attitude'].updateRoll(donnees.roulis);
-                    tabPlaneGauges['instrument-attitude'].updatePitch(donnees.tangage);
-                }
-
-                // Mise à jour du cap
-                if (cle === 'cap' && tabPlaneGauges['instrument-cap']) {
-                    tabPlaneGauges['instrument-cap'].updateHeading(donnees.cap);
-                }
-
-                // Mise à jour de la vitesse verticale
-                if (cle === 'vitesse_verticale' && tabPlaneGauges['instrument-vertical']) {
-                    tabPlaneGauges['instrument-vertical'].updateVerticalSpeed(donnees.vitesse_verticale);
-                }
-                // Mise à jour de l'altitude
-                if (cle === 'altitude' && tabPlaneGauges['instrument-altitude']) {
-                    tabPlaneGauges['instrument-altitude'].updateAltitude(donnees.altitude);
-                }
-                // Mise à jour du turn coordinator
-                if (cle === 'turn_coordinator' && tabPlaneGauges['instrument-turn_coordinator']) {
-                    tabPlaneGauges['instrument-turn_coordinator'].updateCoordinator(donnees.turn_coordinator);
-                }
-
-
-            });
-        });
-        
-
-        // 1. Initialisation
-        const maGaugeHorloge = new Horloge('mon-horloge', '#00ff00');
-
-        // 2. Mise à jour (Boucle)
-        function loop() {
-            maGaugeHorloge.update();
-            requestAnimationFrame(loop); 
-        }
-    
-        loop(); 
-
-        // Fonction appelée à chaque fois qu'on bouge un slider
-        function envoyerSlider(commandePilote, valeurCurseur) {
-            // 1. Mettre à jour l'affichage sur la page web pour l'utilisateur
-            if(commandePilote === 'THROTTLE') document.getElementById('valeur-throttle').innerText = valeurCurseur + '%';
-            if(commandePilote === 'TRIM') document.getElementById('valeur-trim').innerText = valeurCurseur;
-            if(commandePilote === 'FLAPS') document.getElementById('valeur-flaps').innerText = 'Cran ' + valeurCurseur;
-
-            // 2. Envoyer l'information au serveur Node.js
-            socket.emit('actionPilote', { 
-                commande: commandePilote, 
-                valeur: parseInt(valeurCurseur) 
-            });
-        }
-// 1. On crée les objets
-        const boussoleCap = new Boussole('boussole-1', 'CAP');
-        const boussoleAlt = new Boussole('boussole-2', 'ADF');
-
-        // 2. Dans ta fonction socket.on('donneesInstruments')
-        socket.on('donneesInstruments', (donnees) => {
-            // ... tes autres codes ...
-            
-            // On met à jour les boussoles avec le vrai cap reçu
-            boussoleCap.update(donnees.cap);
-            boussoleAlt.update(donnees.cap); // Ici tu pourras mettre une autre variable
-        });
-
-    </script>
+    <script src="/custom/main.js"></script>
 </body>
 </html>
