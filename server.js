@@ -21,8 +21,12 @@ io.on('connection', (socket) => {
     const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
     let time = 8 * 3600; // 8 am in seconds
+    let heading = randomBetween(0, 359);
+    let adfHeading = randomBetween(0, 359);
     const tempSim = setInterval(() => {
-        time++;
+        time += 0.1;
+        heading += 1;
+        adfHeading += 1;
 
         const data = {
             altitude: randomBetween(30000, 30500),
@@ -32,15 +36,15 @@ io.on('connection', (socket) => {
             verticalSpeed: randomBetween(-100, 100),
             engineSpeed: randomBetween(70, 95),
             fuel: randomBetween(0, 100),
-            heading: randomBetween(0, 359),
-            adfHeading: randomBetween(0, 359),
+            heading: heading,
+            adfHeading: adfHeading,
             oil: randomBetween(0,100),
             turnRate: randomBetween(-10,10),
             time: time
         };
 
         socket.emit('planeData', data);
-    }, 1000);
+    }, 100);
 
     socket.on('disconnect', () => {
         console.log('Client disconnected');

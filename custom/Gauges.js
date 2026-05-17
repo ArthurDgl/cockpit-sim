@@ -1,12 +1,12 @@
 // js/Gauges.js
 
 const MID_BLACK = 'rgb(35, 35, 35)';
-const LOW_BLACK = 'rgb(0, 0, 0)';
+const LOW_BLACK = 'rgb(15, 15, 15)';
 const HIGH_BLACK = 'rgb(50, 50, 50)';
 const REDDISH = 'rgb(230, 30, 0)';
 
 class CustomGauge {
-    constructor(canvasId, name, labels = null, subdivisions = 1) {
+    constructor(canvasId, name, labels, subdivisions = 1) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext("2d");
         this.radius = this.canvas.height / 2;
@@ -18,14 +18,20 @@ class CustomGauge {
 
         this.labels = labels;
         this.subdivisions = subdivisions;
+
+        this.spokeLength = 0.1 * this.radius;
+        this.outerLineWidth = this.radius * 0.1;
+        this.textSize = this.radius * 0.15;
     }
 
     update(data) {
         const ctx = this.ctx;
         ctx.shadowColor = 'rgba(0, 0, 0, 0)';
 
-        this.drawFace();
-        this.drawLabels();
+        const offset = data.dialOffset ?? 0;
+
+        this.drawFace(offset);
+        this.drawLabels(offset);
         this.completeBottomLayer(data);
 
         ctx.shadowColor = "rgba(0,0,0,0.8)";
@@ -44,12 +50,12 @@ class CustomGauge {
         return;
     }
 
-    drawFace() {
+    drawFace(dialOffset) {
         const ctx = this.ctx;
 
         const background = ctx.createRadialGradient(
-            0, 0, 0.9*this.radius,
-            0, 0, this.radius
+            0, 0, (this.radius - this.outerLineWidth/2)*0.95,
+            0, 0, this.radius - this.outerLineWidth/2
         );
         background.addColorStop(0, MID_BLACK);
         background.addColorStop(1, LOW_BLACK);
@@ -58,11 +64,10 @@ class CustomGauge {
         ctx.arc(0, 0, this.radius, 0, 2 * Math.PI);
         ctx.fillStyle = background;
         
-        const lw = this.radius * 0.1;
-        ctx.lineWidth = lw;
+        ctx.lineWidth = this.outerLineWidth;
         const outline = ctx.createRadialGradient(
-            0, 0, this.radius - lw/2,
-            0, 0, this.radius + lw/2
+            0, 0, this.radius - this.outerLineWidth/2,
+            0, 0, this.radius + this.outerLineWidth/2
         );
         outline.addColorStop(0, HIGH_BLACK);
         outline.addColorStop(0.2, MID_BLACK);
@@ -85,28 +90,28 @@ class CustomGauge {
         const offsetAngle = 360 / count;
 
         for (let i = 0; i < count; i++) {
-            const deg = i * offsetAngle;
+            const deg = i * offsetAngle + dialOffset;
             const rad = deg * Math.PI / 180;
             ctx.rotate(rad);
 
             const main = (i % this.subdivisions == 0);
-            const length = main ? this.radius * 0.1 : this.radius * 0.06;
+            const length = main ? this.spokeLength : this.spokeLength * 0.6;
             ctx.lineWidth = main ? 2 : 1;
             ctx.strokeStyle = main ? 'white' : '#BBB';
-            ctx.translate(0, -this.radius + lw/2);
+            ctx.translate(0, -this.radius + this.outerLineWidth/2);
             ctx.beginPath();
             ctx.moveTo(0, 0);
             ctx.lineTo(0, length);
             ctx.stroke();
-            ctx.translate(0, this.radius - lw/2);
+            ctx.translate(0, this.radius - this.outerLineWidth/2);
             
             ctx.rotate(-rad);
         }
     }
 
-    drawLabels() {
+    drawLabels(dialOffset) {
         const ctx = this.ctx;
-        ctx.font = this.radius * 0.15 + "px arial";
+        ctx.font = this.textSize + "px arial";
         ctx.textBaseline = "middle";
         ctx.textAlign = "center";
         ctx.fillStyle = "white";
@@ -115,7 +120,7 @@ class CustomGauge {
         const offsetAngle = 360 / count;
 
         for (let i = 0; i < count; i++) {
-            let ang = i * offsetAngle * Math.PI / 180;
+            let ang = (i * offsetAngle + dialOffset) * Math.PI / 180;
             ctx.rotate(ang);
             ctx.translate(0, -this.radius * 0.75);
             ctx.rotate(-ang);
@@ -146,6 +151,42 @@ class CustomGauge {
         ctx.lineTo(0, -length);
         ctx.stroke();
         ctx.rotate(-pos);
+    }
+}
+
+class DetachedDialGauge extends CustomGauge {
+    constructor(canvasId, name, labels, subdivisions) {
+        super(canvasId, name, labels, subdivisions);
+    }
+
+    completeBottomLayer(data) {
+        this.drawInnerDialShadow();
+    }
+
+    drawDot() {
+        return;
+    }
+
+    drawInnerDialShadow() {
+        const ctx = this.ctx;
+
+        const radius = this.radius - this.outerLineWidth/2 - this.spokeLength - this.textSize * 1.3;
+        
+        const gradient = ctx.createRadialGradient(
+            0, 0, 0.92*radius,
+            0, 0, radius
+        );
+        gradient.addColorStop(0, 'rgba(15, 15, 15, 0)');
+        gradient.addColorStop(1, LOW_BLACK);
+
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+        ctx.fillStyle = gradient;
+        ctx.fill();
+    }
+
+    drawMiddleLayer(data) {
+        // TODO
     }
 }
 
@@ -188,7 +229,7 @@ class Compass extends CustomGauge {
         const ctx = this.ctx;
         ctx.fillStyle = color;
 
-        ctx.rotate(angle);
+        ctx.rotate(angle * Math.PI / 180);
 
         ctx.beginPath();
         ctx.moveTo(0, -this.radius * 0.3);
@@ -199,6 +240,6 @@ class Compass extends CustomGauge {
         ctx.lineTo(this.radius * 0.08, 0);
         ctx.fill();
 
-        ctx.rotate(-angle);
+        ctx.rotate(-angle * Math.PI / 180);
     }
 }

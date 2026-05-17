@@ -1,5 +1,16 @@
 const socket = io();
 
+function sendPilotAction(pilotCommand, commandValue) {
+    if(pilotCommand === 'THROTTLE') document.getElementById('value-throttle').innerText = commandValue + '%';
+    if(pilotCommand === 'TRIM') document.getElementById('value-trim').innerText = commandValue;
+    if(pilotCommand === 'FLAPS') document.getElementById('value-flaps').innerText = commandValue;
+
+    socket.emit('pilotAction', { 
+        command: pilotCommand, 
+        value: parseInt(commandValue)
+    });
+}
+
 function createFlightIndicator(elementId, type, options = {}) {
     const el = document.getElementById(elementId);
     if (!el) return;
@@ -67,6 +78,8 @@ const magneticCompass = new Compass('compass-1', 'Compass');
 const adfNeedle = new Compass('compass-2', 'ADF');
 const analogClock = new AnalogClock('analog-clock');
 
+const CDI1 = new DetachedDialGauge('cdi-1', '', ['N', 3, 6, 'E', 12, 15, 'S', 21, 24, 'W', 30, 33], 3);
+
 socket.on('planeData', (data) => {
     updateIndicators(data);
 
@@ -75,15 +88,5 @@ socket.on('planeData', (data) => {
     magneticCompass.update(data.heading);
     adfNeedle.update(data.adfHeading);
     analogClock.update(data.time);
+    CDI1.update({dialOffset: data.heading});
 });
-
-function sendPilotAction(pilotCommand, commandValue) {
-    if(pilotCommand === 'THROTTLE') document.getElementById('value-throttle').innerText = commandValue + '%';
-    if(pilotCommand === 'TRIM') document.getElementById('value-trim').innerText = commandValue;
-    if(pilotCommand === 'FLAPS') document.getElementById('value-flaps').innerText = commandValue;
-
-    socket.emit('pilotAction', { 
-        command: pilotCommand, 
-        value: parseInt(commandValue)
-    });
-}
