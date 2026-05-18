@@ -54,6 +54,7 @@ function updateIndicators(data) {
     indicatorAltitude?.updateAltitude(data.altitude);
 
     indicatorTurnCoordinator?.updateCoordinator(data.turnRate);
+    indicatorTurnCoordinator?.updateBall(data.ball);
 }
 
 function updateGauges(data) {

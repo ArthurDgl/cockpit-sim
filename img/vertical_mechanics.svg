@@ -364,17 +364,17 @@
     </g>
 
     <g class="mark-labels">
-        <text class="numerical" x="0" y="0">1</text>
-        <text class="numerical" x="0" y="0">1.5</text>
-        <text class="numerical" x="0" y="0" dy="1">2</text>
-        <text class="numerical" x="0" y="0">1.5</text>
-        <text class="numerical" x="0" y="0">1</text>
-        <text class="numerical" x="0" y="0">.5</text>
+        <text class="numerical" x="0" y="0">10</text>
+        <text class="numerical" x="0" y="0">15</text>
+        <text class="numerical" x="0" y="0" dy="1">20</text>
+        <text class="numerical" x="0" y="0">15</text>
+        <text class="numerical" x="0" y="0">10</text>
+        <text class="numerical" x="0" y="0">5</text>
         <text class="numerical" x="0" y="0" dy="2">0</text>
-        <text class="numerical" x="0" y="0">.5</text>
+        <text class="numerical" x="0" y="0">5</text>
 
         <text class="title" x="0" y="-10%">VERTICAL SPEED</text>
-        <text class="title" x="0" y="10%">1 KM PER HOUR</text>
+        <text class="title" x="0" y="10%">100 FEET PER MIN</text>
     </g>
 
     <g class="shades">

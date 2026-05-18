@@ -108,6 +108,11 @@ class FlightIndicators {
         meter.style.transform = `rotate(${turn}deg)`
     }
 
+    updateBall(position){
+        let meter = this.placeholder.querySelector('div.instrument.turn-coordinator div.ball')
+        meter.style.transform = `translate(${position}px)`
+    }
+
     updateVerticalSpeed(vSpeed) {
         if (vSpeed > FlightIndicators.CONSTANTS.vertical_speed_bound) {
             vSpeed = FlightIndicators.CONSTANTS.vertical_speed_bound;
@@ -399,12 +404,15 @@ class FlightIndicators {
 
         const turn = this.createDivBox('turn', imgDirectory, 'fi_tc_airplane.svg')
 
+        const ball = this.createDivBox('ball', imgDirectory, 'turn_coordinator_ball.svg')
+
         const mechanics = this.createMechanicsBox(imgDirectory)
 
         instrument.appendChild(fiBox)
         instrument.appendChild(tiBox)
         instrument.appendChild(turn)
         instrument.appendChild(mechanics)
+        instrument.appendChild(ball)
 
         this.placeholder.appendChild(instrument)
 
