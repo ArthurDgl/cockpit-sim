@@ -6,7 +6,7 @@ function sendPilotAction(pilotCommand, commandValue) {
     if(pilotCommand === 'FLAPS') document.getElementById('value-flaps').innerText = commandValue;
     if(pilotCommand === 'OBS1') {
         document.getElementById('value-obs-1').innerText = commandValue + '°';
-        CDI1.update({dialOffset: commandValue});
+        CDI1.update({dialOffset: -commandValue});
     }
 
     socket.emit('pilotAction', { 

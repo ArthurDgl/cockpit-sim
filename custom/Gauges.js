@@ -6,7 +6,7 @@ const HIGH_BLACK = 'rgb(50, 50, 50)';
 const REDDISH = 'rgb(230, 30, 0)';
 
 class CustomGauge {
-    constructor(canvasId, name, labels, subdivisions = 1) {
+    constructor(canvasId, name, labels, subdivisions = 1, swapSpokesAndLabels = false) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext("2d");
         this.radius = this.canvas.height / 2;
@@ -19,9 +19,12 @@ class CustomGauge {
         this.labels = labels;
         this.subdivisions = subdivisions;
 
-        this.spokeLength = 0.1 * this.radius;
+        this.spokeLength = 0.12 * this.radius;
         this.outerLineWidth = this.radius * 0.1;
         this.textSize = this.radius * 0.15;
+        this.innerDialRadius = this.radius - this.outerLineWidth/2 - this.spokeLength - this.textSize * 1.3;
+
+        this.swapSpokesAndLabels = swapSpokesAndLabels;
 
         requestAnimationFrame(() => {this.update()});
     }
@@ -91,21 +94,23 @@ class CustomGauge {
         const count = this.labels.length * this.subdivisions;
         const offsetAngle = 360 / count;
 
+        const start = this.swapSpokesAndLabels ? this.innerDialRadius : this.radius - this.outerLineWidth/2;
+
         for (let i = 0; i < count; i++) {
             const deg = i * offsetAngle + dialOffset;
             const rad = deg * Math.PI / 180;
             ctx.rotate(rad);
 
             const main = (i % this.subdivisions == 0);
-            const length = main ? this.spokeLength : this.spokeLength * 0.6;
+            const length = main ? this.spokeLength : this.spokeLength * 0.75;
             ctx.lineWidth = main ? 2 : 1;
             ctx.strokeStyle = main ? 'white' : '#BBB';
-            ctx.translate(0, -this.radius + this.outerLineWidth/2);
+            ctx.translate(0, -start);
             ctx.beginPath();
             ctx.moveTo(0, 0);
-            ctx.lineTo(0, length);
+            ctx.lineTo(0, this.swapSpokesAndLabels ? -length : length);
             ctx.stroke();
-            ctx.translate(0, this.radius - this.outerLineWidth/2);
+            ctx.translate(0, start);
             
             ctx.rotate(-rad);
         }
@@ -121,14 +126,16 @@ class CustomGauge {
         const count = this.labels.length;
         const offsetAngle = 360 / count;
 
+        const radius = this.swapSpokesAndLabels ? this.radius * 0.84 : this.radius * 0.75;
+
         for (let i = 0; i < count; i++) {
             let ang = (i * offsetAngle + dialOffset) * Math.PI / 180;
             ctx.rotate(ang);
-            ctx.translate(0, -this.radius * 0.75);
+            ctx.translate(0, -radius);
             ctx.rotate(-ang);
             ctx.fillText(this.labels[i].toString(), 0, 0);
             ctx.rotate(ang);
-            ctx.translate(0, this.radius * 0.75);
+            ctx.translate(0, radius);
             ctx.rotate(-ang);
         }
     }
@@ -158,7 +165,7 @@ class CustomGauge {
 
 class DetachedDialGauge extends CustomGauge {
     constructor(canvasId, name, labels, subdivisions) {
-        super(canvasId, name, labels, subdivisions);
+        super(canvasId, name, labels, subdivisions, true);
     }
 
     completeBottomLayer(data) {
@@ -168,7 +175,7 @@ class DetachedDialGauge extends CustomGauge {
     drawInnerDialShadow() {
         const ctx = this.ctx;
 
-        const radius = this.radius - this.outerLineWidth/2 - this.spokeLength - this.textSize * 1.3;
+        const radius = this.innerDialRadius;
         
         const gradient = ctx.createRadialGradient(
             0, 0, 0.92*radius,
@@ -186,7 +193,7 @@ class DetachedDialGauge extends CustomGauge {
 
 class CourseDeviationIndicator extends DetachedDialGauge {
     constructor(canvasId) {
-        super(canvasId, "", ['0', 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33], 3);
+        super(canvasId, "", ['0', 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33], 6);
     }
 
     drawDot() {
@@ -194,7 +201,27 @@ class CourseDeviationIndicator extends DetachedDialGauge {
     }
 
     drawMiddleLayer() {
+        const ctx = this.ctx;
 
+        this.drawTriangle();
+        ctx.rotate(Math.PI);
+        this.drawTriangle();
+        ctx.rotate(Math.PI);
+    }
+
+    drawTriangle() {
+        const ctx = this.ctx;
+        const triangleSize = this.radius*0.06;
+
+        ctx.fillStyle = 'white';
+
+        ctx.translate(0, -this.innerDialRadius);
+        ctx.beginPath();
+        ctx.moveTo(0, -triangleSize);
+        ctx.lineTo(triangleSize, triangleSize);
+        ctx.lineTo(-triangleSize, triangleSize);
+        ctx.fill();
+        ctx.translate(0, this.innerDialRadius);
     }
 }
 

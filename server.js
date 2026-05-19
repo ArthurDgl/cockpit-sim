@@ -20,7 +20,7 @@ io.on('connection', (socket) => {
     console.log('Client has connected');
 
     socket.on('pilotAction', (data) => {
-        console.log(`received : ${data.command} : ${data.value}`);
+        // console.log(`received : ${data.command} : ${data.value}`);
         
         handlePilotAction(data.command, data.value, data);
     });
@@ -65,7 +65,7 @@ server.listen(3000, () => {
 });
 
 const EVENT_ID_PAUSE = 1;
-const EVENT_VOR1_OBI_SET = 2;
+const EVENT_VOR1_SET = 2;
 
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
@@ -145,11 +145,15 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
         }
     });
 
-    handle.mapClientEventToSimEvent(EVENT_VOR1_OBI_SET, 'VOR1_SET');
+    handle.mapClientEventToSimEvent(EVENT_VOR1_SET, 'VOR1_SET');
+
+    handle.addClientEventToNotificationGroup(1, EVENT_VOR1_SET, false);
+    handle.setNotificationGroupPriority(1, 1);
 
     handlePilotAction = (command, value, data) => {
-        if (command === 'OBS1')
-            handle.transmitClientEvent(0, EVENT_VOR1_OBI_SET, value, 0, 0);
+        if (command === 'OBS1') {
+            handle.transmitClientEvent(0, EVENT_VOR1_SET, value, 1, 0);
+        }
     }
 })
 .catch(function (error) {
