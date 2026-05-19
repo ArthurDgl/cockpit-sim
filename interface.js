@@ -41,7 +41,7 @@ io.on('connection', (socket) => {
             oil:            randomBetween(0,400),
             turnRate:       randomBetween(0,400),
             ball:           randomBetween(0,400),
-            temperature:    randomBetween(0,359),
+            temperature:    randomBetween(-50,70),
             time:           randomBetween(0,400)
         };
         socket.emit('planeData', data);

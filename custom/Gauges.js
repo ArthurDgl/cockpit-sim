@@ -6,7 +6,7 @@ const HIGH_BLACK = 'rgb(50, 50, 50)';
 const REDDISH = 'rgb(230, 30, 0)';
 
 class CustomGauge {
-    constructor(canvasId, name, labels, subdivisions = 1, swapSpokesAndLabels = false) {
+    constructor(canvasId, name, labels, subdivisions = 1, swapSpokesAndLabels = false, startAngle = 0, stopAngle = 360) {
         this.canvas = document.getElementById(canvasId);
         this.ctx = this.canvas.getContext("2d");
         this.radius = this.canvas.height / 2;
@@ -23,6 +23,13 @@ class CustomGauge {
         this.outerLineWidth = this.radius * 0.1;
         this.textSize = this.radius * 0.15;
         this.innerDialRadius = this.radius - this.outerLineWidth/2 - this.spokeLength - this.textSize * 1.3;
+
+        this.startAngle = startAngle;
+        this.stopAngle = stopAngle;
+
+        if ((this.stopAngle - this.startAngle) % 360 == 0) {
+            this.labels.push('');
+        }
 
         this.swapSpokesAndLabels = swapSpokesAndLabels;
 
@@ -91,13 +98,13 @@ class CustomGauge {
 
         ctx.lineCap = 'butt';
 
-        const count = this.labels.length * this.subdivisions;
-        const offsetAngle = 360 / count;
+        const count = (this.labels.length - 1) * this.subdivisions;
+        const offsetAngle = (this.stopAngle - this.startAngle) / count;
 
         const start = this.swapSpokesAndLabels ? this.innerDialRadius : this.radius - this.outerLineWidth/2;
 
-        for (let i = 0; i < count; i++) {
-            const deg = i * offsetAngle + dialOffset;
+        for (let i = 0; i <= count; i++) {
+            const deg = this.startAngle + i * offsetAngle + dialOffset;
             const rad = deg * Math.PI / 180;
             ctx.rotate(rad);
 
@@ -123,13 +130,13 @@ class CustomGauge {
         ctx.textAlign = "center";
         ctx.fillStyle = "white";
 
-        const count = this.labels.length;
-        const offsetAngle = 360 / count;
+        const count = this.labels.length - 1;
+        const offsetAngle = (this.stopAngle - this.startAngle) / count;
 
         const radius = this.swapSpokesAndLabels ? this.radius * 0.84 : this.radius * 0.75;
 
-        for (let i = 0; i < count; i++) {
-            let ang = (i * offsetAngle + dialOffset) * Math.PI / 180;
+        for (let i = 0; i <= count; i++) {
+            let ang = (this.startAngle + i * offsetAngle + dialOffset) * Math.PI / 180;
             ctx.rotate(ang);
             ctx.translate(0, -radius);
             ctx.rotate(-ang);
@@ -161,10 +168,28 @@ class CustomGauge {
         ctx.stroke();
         ctx.rotate(-pos);
     }
+
+    drawNeedle(angle, color) {
+        const ctx = this.ctx;
+        ctx.fillStyle = color;
+
+        ctx.rotate((angle - 180) * Math.PI / 180);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius * 0.3);
+        ctx.lineTo(-this.radius * 0.08, 0);
+        ctx.lineTo(-this.radius * 0.01, this.radius * 0.84);
+        ctx.lineTo(0, this.radius * 0.85);
+        ctx.lineTo(this.radius * 0.01, this.radius * 0.84);
+        ctx.lineTo(this.radius * 0.08, 0);
+        ctx.fill();
+
+        ctx.rotate(-(angle - 180) * Math.PI / 180);
+    }
 }
 
 class DetachedDialGauge extends CustomGauge {
-    constructor(canvasId, name, labels, subdivisions) {
+    constructor(canvasId, name, labels, subdivisions, startAngle, stopAngle) {
         super(canvasId, name, labels, subdivisions, true);
     }
 
@@ -259,47 +284,12 @@ class Compass extends CustomGauge {
     drawMiddleLayer(data) {
         this.drawNeedle(data.angle ?? 0, REDDISH);
     }
-
-    drawNeedle(angle, color) {
-        const ctx = this.ctx;
-        ctx.fillStyle = color;
-
-        ctx.rotate(angle * Math.PI / 180);
-
-        ctx.beginPath();
-        ctx.moveTo(0, -this.radius * 0.3);
-        ctx.lineTo(-this.radius * 0.08, 0);
-        ctx.lineTo(-this.radius * 0.01, this.radius * 0.84);
-        ctx.lineTo(0, this.radius * 0.85);
-        ctx.lineTo(this.radius * 0.01, this.radius * 0.84);
-        ctx.lineTo(this.radius * 0.08, 0);
-        ctx.fill();
-
-        ctx.rotate(-angle * Math.PI / 180);
-    }
 }
 class Thermometer extends CustomGauge{
-    constructor(canvasId, name = 'Thermometer C°') {
-        super(canvasId, name, [20, 30, 40, 50, 60, 70, -50, -40, -30, -20, -10, 0], 5);
+    constructor(canvasId, name = 'Th C°') {
+        super(canvasId, name, [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], 5, false, -150, 150);
     }
     drawMiddleLayer(data) {
         this.drawNeedle(data.angle ?? 0, "white");
-    }
-    drawNeedle(angle, color) {
-        const ctx = this.ctx;
-        ctx.fillStyle = color;
-
-        ctx.rotate(angle * Math.PI / 180);
-
-        ctx.beginPath();
-        ctx.moveTo(0, -this.radius * 0.3);
-        ctx.lineTo(-this.radius * 0.08, 0);
-        ctx.lineTo(-this.radius * 0.01, this.radius * 0.84);
-        ctx.lineTo(0, this.radius * 0.85);
-        ctx.lineTo(this.radius * 0.01, this.radius * 0.84);
-        ctx.lineTo(this.radius * 0.08, 0);
-        ctx.fill();
-
-        ctx.rotate(-angle * Math.PI / 180);
     }
 }
