@@ -22,9 +22,11 @@ class CustomGauge {
         this.spokeLength = 0.1 * this.radius;
         this.outerLineWidth = this.radius * 0.1;
         this.textSize = this.radius * 0.15;
+
+        requestAnimationFrame(() => {this.update()});
     }
 
-    update(data) {
+    update(data = {}) {
         const ctx = this.ctx;
         ctx.shadowColor = 'rgba(0, 0, 0, 0)';
 
@@ -163,10 +165,6 @@ class DetachedDialGauge extends CustomGauge {
         this.drawInnerDialShadow();
     }
 
-    drawDot() {
-        return;
-    }
-
     drawInnerDialShadow() {
         const ctx = this.ctx;
 
@@ -184,9 +182,19 @@ class DetachedDialGauge extends CustomGauge {
         ctx.fillStyle = gradient;
         ctx.fill();
     }
+}
 
-    drawMiddleLayer(data) {
-        // TODO
+class CourseDeviationIndicator extends DetachedDialGauge {
+    constructor(canvasId) {
+        super(canvasId, "", ['0', 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33], 3);
+    }
+
+    drawDot() {
+        return;
+    }
+
+    drawMiddleLayer() {
+
     }
 }
 
@@ -195,8 +203,8 @@ class AnalogClock extends CustomGauge {
         super(canvasId, name, [12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], 5);
     }
 
-    drawMiddleLayer(time) {
-        this.drawTime(time);
+    drawMiddleLayer(data) {
+        this.drawTime(data.time ?? 0);
     }
 
     drawTime(time) {
@@ -221,8 +229,8 @@ class Compass extends CustomGauge {
         super(canvasId, name, ['N', 3, 6, 'E', 12, 15, 'S', 21, 24, 'W', 30, 33], 3);
     }
 
-    drawMiddleLayer(angle) {
-        this.drawNeedle(angle, REDDISH);
+    drawMiddleLayer(data) {
+        this.drawNeedle(data.angle ?? 0, REDDISH);
     }
 
     drawNeedle(angle, color) {
