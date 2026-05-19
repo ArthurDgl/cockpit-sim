@@ -14,13 +14,15 @@ const SimConnectPeriod = simConnect.SimConnectPeriod;
 
 app.use(express.static(__dirname));
 
+let handlePilotAction = ((command, value, data) => {return;});
+
 io.on('connection', (socket) => {
     console.log('Client has connected');
 
     socket.on('pilotAction', (data) => {
-        console.log(`received : ${data.command} : ${data.value}`);
+        // console.log(`received : ${data.command} : ${data.value}`);
         
-        // TODO : msfs bridge
+        handlePilotAction(data.command, data.value, data);
     });
 
     const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
@@ -49,7 +51,6 @@ io.on('connection', (socket) => {
             time: simData.time
         };
         socket.emit('planeData', data);
-        console.log('ball', data.ball);
     }, 100);
     
     socket.on('disconnect', () => {
@@ -64,13 +65,15 @@ server.listen(3000, () => {
 });
 
 const EVENT_ID_PAUSE = 1;
+const EVENT_VOR1_SET = 2;
+
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
 
 let simData = {};
 
 simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
-    .then(({recvOpen, handle}) => {
+.then(({recvOpen, handle}) => {
     console.log('Connected to', recvOpen.applicationName);
 
     handle.on('event', function (recvEvent) {
@@ -141,7 +144,18 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
             }
         }
     });
-    })
-    .catch(function (error) {
-        console.log('Connection failed:', error);
-    });
+
+    handle.mapClientEventToSimEvent(EVENT_VOR1_SET, 'VOR1_SET');
+
+    handle.addClientEventToNotificationGroup(1, EVENT_VOR1_SET, false);
+    handle.setNotificationGroupPriority(1, 1);
+
+    handlePilotAction = (command, value, data) => {
+        if (command === 'OBS1') {
+            handle.transmitClientEvent(0, EVENT_VOR1_SET, value, 1, 0);
+        }
+    }
+})
+.catch(function (error) {
+    console.log('Connection failed:', error);
+});
