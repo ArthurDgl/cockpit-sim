@@ -3,6 +3,9 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 
+const { SerialPort } = require('serialport');
+const { ReadlineParser } = require('@serialport/parser-readline');
+
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -16,7 +19,9 @@ app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
 
+let globalSocket;
 io.on('connection', (socket) => {
+    globalSocket = socket;
     console.log('Client has connected');
 
     socket.on('pilotAction', (data) => {
@@ -27,14 +32,7 @@ io.on('connection', (socket) => {
 
     const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
-    let time = 8 * 3600; // 8 am in seconds
-    let heading = randomBetween(0, 359);
-    let adfHeading = randomBetween(0, 359);
     const tempSim = setInterval(() => {
-        time += 0.1;
-        heading += 1;
-        adfHeading += 1;
-
         const data = {
             altitude: simData.altitude,
             airSpeed: simData.airSpeed,
@@ -174,4 +172,30 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
 })
 .catch(function (error) {
     console.log('Connection failed:', error);
+});
+
+const port = new SerialPort({
+  path: 'COM3',
+  baudRate: 115200
+});
+
+const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+parser.on('data', (line) => {
+    console.log(line);
+    data = JSON.parse(line);
+    console.log(data.value);
+
+    if (!data || !data.value) return;
+
+    const angle = ((data.value % 360) + 360) % 360;
+
+    console.log(angle);
+
+    handlePilotAction('OBS1', angle, {});
+    globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
+});
+
+port.on('open', () => {
+  console.log('Serial connection opened');
 });

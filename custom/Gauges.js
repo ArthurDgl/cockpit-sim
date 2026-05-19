@@ -40,7 +40,7 @@ class CustomGauge {
         const ctx = this.ctx;
         ctx.shadowColor = 'rgba(0, 0, 0, 0)';
 
-        const offset = data.dialOffset ?? 0;
+        const offset = -(data.dialOffset ?? 0);
 
         this.drawFace(offset);
         this.drawLabels(offset);
@@ -218,7 +218,7 @@ class DetachedDialGauge extends CustomGauge {
 
 class CourseDeviationIndicator extends DetachedDialGauge {
     constructor(canvasId) {
-        super(canvasId, "", ['0', 3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33], 6);
+        super(canvasId, "", ['N', 3, 6, 'E', 12, 15, 'S', 21, 24, 'W', 30, 33], 6);
     }
 
     drawDot() {

@@ -96,3 +96,9 @@ socket.on('planeData', (data) => {
     analogClock.update({time: data.time});
     thermometer.update({angle: (data.temperature + 50)*2.5+210})
 });
+
+socket.on('physicalAction', (data) => {
+    if (data.action === 'OBS1') {
+        CDI1.update({dialOffset: data.value});
+    }
+}); 
