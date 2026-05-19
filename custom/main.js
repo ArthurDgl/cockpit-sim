@@ -94,5 +94,5 @@ socket.on('planeData', (data) => {
     magneticCompass.update({angle: data.heading});
     adfNeedle.update({angle: data.adfHeading});
     analogClock.update({time: data.time});
-    thermometer.update({angle: (0 + 50)*2.5+210})
+    thermometer.update({angle: (data.temperature + 50)*2.5+210})
 });

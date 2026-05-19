@@ -46,7 +46,7 @@ io.on('connection', (socket) => {
             heading: simData.heading,
             adfHeading: simData.adfHeading,
             oil: simData.oil,
-            turnRate: simData.turnRate*10,
+            turnRate: simData.turnRate*8,
             ball: simData.ball*39.6,
             time: simData.time,
             temperature: simData.temperature

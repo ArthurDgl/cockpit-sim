@@ -105,6 +105,12 @@ class FlightIndicators {
 
     updateCoordinator(turn) {
         let meter = this.placeholder.querySelector('div.instrument.turn-coordinator div.turn')
+        if (turn < -55){
+            turn = -55;
+        }
+        else if(turn > 55){
+            turn = 55;
+        }
         meter.style.transform = `rotate(${turn}deg)`
     }
 
@@ -402,17 +408,18 @@ class FlightIndicators {
 
         const tiBox = this.createImgBox(imgDirectory, 'turn_coordinator.svg')
 
-        const turn = this.createDivBox('turn', imgDirectory, 'fi_tc_airplane.svg')
-
         const ball = this.createDivBox('ball', imgDirectory, 'turn_coordinator_ball.svg')
+
+        const turn = this.createDivBox('turn', imgDirectory, 'fi_tc_airplane.svg')
 
         const mechanics = this.createMechanicsBox(imgDirectory)
 
         instrument.appendChild(fiBox)
         instrument.appendChild(tiBox)
+        instrument.appendChild(ball)
         instrument.appendChild(turn)
         instrument.appendChild(mechanics)
-        instrument.appendChild(ball)
+
 
         this.placeholder.appendChild(instrument)
 

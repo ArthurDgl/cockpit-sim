@@ -286,7 +286,7 @@ class Compass extends CustomGauge {
     }
 }
 class Thermometer extends CustomGauge{
-    constructor(canvasId, name = 'Th C°') {
+    constructor(canvasId, name = 'Th °C') {
         super(canvasId, name, [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], 5, false, -150, 150);
     }
     drawMiddleLayer(data) {
