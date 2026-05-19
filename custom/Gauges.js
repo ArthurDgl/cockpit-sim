@@ -243,3 +243,28 @@ class Compass extends CustomGauge {
         ctx.rotate(-angle * Math.PI / 180);
     }
 }
+class Thermometer extends CustomGauge{
+    constructor(canvasId, name = 'Thermometer C°') {
+        super(canvasId, name, [20, 30, 40, 50, 60, 70, -50, -40, -30, -20, -10, 0], 5);
+    }
+    drawMiddleLayer(data) {
+        this.drawNeedle(data.angle ?? 0, "white");
+    }
+    drawNeedle(angle, color) {
+        const ctx = this.ctx;
+        ctx.fillStyle = color;
+
+        ctx.rotate(angle * Math.PI / 180);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius * 0.3);
+        ctx.lineTo(-this.radius * 0.08, 0);
+        ctx.lineTo(-this.radius * 0.01, this.radius * 0.84);
+        ctx.lineTo(0, this.radius * 0.85);
+        ctx.lineTo(this.radius * 0.01, this.radius * 0.84);
+        ctx.lineTo(this.radius * 0.08, 0);
+        ctx.fill();
+
+        ctx.rotate(-angle * Math.PI / 180);
+    }
+}

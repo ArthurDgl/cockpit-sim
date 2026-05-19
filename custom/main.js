@@ -78,6 +78,7 @@ const gaugeOil = createGauge('gauge-oil', 'Oil', 100, '%');
 const magneticCompass = new Compass('compass-1', 'Compass');
 const adfNeedle = new Compass('compass-2', 'ADF');
 const analogClock = new AnalogClock('analog-clock');
+const thermometer = new Thermometer('thermometer');
 
 const CDI1 = new DetachedDialGauge('cdi-1', '', ['N', 3, 6, 'E', 12, 15, 'S', 21, 24, 'W', 30, 33], 3);
 
@@ -90,4 +91,5 @@ socket.on('planeData', (data) => {
     adfNeedle.update(data.adfHeading);
     analogClock.update(data.time);
     CDI1.update({dialOffset: data.heading});
+    thermometer.update({angle: data.temperature});
 });
