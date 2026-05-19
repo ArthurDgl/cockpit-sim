@@ -48,7 +48,8 @@ io.on('connection', (socket) => {
             oil: simData.oil,
             turnRate: simData.turnRate*10,
             ball: simData.ball*39.6,
-            time: simData.time
+            time: simData.time,
+            temperature: simData.temperature
         };
         socket.emit('planeData', data);
     }, 100);
@@ -114,6 +115,7 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     handle.addToDataDefinition(DEFINITION_1, 'TURN INDICATOR RATE', 'degrees per second', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'TURN COORDINATOR BALL', 'position', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'LOCAL TIME', 'seconds', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'TOTAL AIR TEMPERATURE', 'celsius', SimConnectDataType.FLOAT64);
 
     handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
 
@@ -138,6 +140,7 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
                     turnRate: recvSimObjectData.data.readFloat64(),
                     ball: recvSimObjectData.data.readFloat64(),
                     time: recvSimObjectData.data.readFloat64(),
+                    temperature: recvSimObjectData.data.readFloat64(),
                 }
                 simData = receivedData;
                 break;
