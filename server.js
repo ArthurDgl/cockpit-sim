@@ -49,7 +49,11 @@ io.on('connection', (socket) => {
             turnRate: simData.turnRate*10,
             ball: simData.ball*39.6,
             time: simData.time,
-            temperature: simData.temperature
+            temperature: simData.temperature,
+            cdi1: simData.cdi1,
+            cdi2: simData.cdi2,
+            suction: simData.suction,
+            ammeter:simData.ammeter
         };
         socket.emit('planeData', data);
     }, 100);
@@ -116,6 +120,11 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     handle.addToDataDefinition(DEFINITION_1, 'TURN COORDINATOR BALL', 'position', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'LOCAL TIME', 'seconds', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'TOTAL AIR TEMPERATURE', 'celsius', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:1', 'number', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:2', 'number', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
+
 
     handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
 
@@ -141,6 +150,10 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
                     ball: recvSimObjectData.data.readFloat64(),
                     time: recvSimObjectData.data.readFloat64(),
                     temperature: recvSimObjectData.data.readFloat64(),
+                    cdi1: recvSimObjectData.data.readFloat64(),
+                    cdi2: recvSimObjectData.data.readFloat64(),
+                    suction: recvSimObjectData.data.readFloat64(),
+                    ammeter: recvSimObjectData.data.readFloat64(),
                 }
                 simData = receivedData;
                 break;
