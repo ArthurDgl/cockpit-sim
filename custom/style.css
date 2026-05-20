@@ -36,3 +36,14 @@ input[type="range"] {
     width: 100%;
     cursor: pointer;
 }
+.container{
+    display: flex;
+    justify-content:center;
+}
+.box{
+    width: 50%;
+    height: 8%px;
+}
+#box1{
+    background-color: #313131;
+}
