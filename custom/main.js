@@ -98,6 +98,7 @@ socket.on('planeData', (data) => {
     thermometer.update({angle: (data.temperature + 50)*2.5+210})
     suctionGauge.update({angle: data.suction*30+210});
     ammeter.update({angle: (data.ammeter+60)*1.5+270});
+    CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1});
 });
 
 socket.on('physicalAction', (data) => {

@@ -27,6 +27,8 @@ class CustomGauge {
         this.startAngle = startAngle;
         this.stopAngle = stopAngle;
 
+        this.dialOffset = 0;
+
         if ((this.stopAngle - this.startAngle) % 360 == 0) {
             this.labels.push('');
         }
@@ -40,10 +42,11 @@ class CustomGauge {
         const ctx = this.ctx;
         ctx.shadowColor = 'rgba(0, 0, 0, 0)';
 
-        const offset = -(data.dialOffset ?? 0);
+        const offset = data.dialOffset ?? this.dialOffset;
+        this.dialOffset = offset;
 
-        this.drawFace(offset);
-        this.drawLabels(offset);
+        this.drawFace(-offset);
+        this.drawLabels(-offset);
         this.completeBottomLayer(data);
 
         ctx.shadowColor = "rgba(0,0,0,0.8)";
@@ -219,19 +222,98 @@ class DetachedDialGauge extends CustomGauge {
 class CourseDeviationIndicator extends DetachedDialGauge {
     constructor(canvasId) {
         super(canvasId, "", ['N', 3, 6, 'E', 12, 15, 'S', 21, 24, 'W', 30, 33], 6);
+
+        this.needleOffset = 0;
+        this.toFromFlag = 0;
     }
 
     drawDot() {
         return;
     }
 
-    drawMiddleLayer() {
+    drawMiddleLayer(data) {
         const ctx = this.ctx;
 
         this.drawTriangle();
         ctx.rotate(Math.PI);
         this.drawTriangle();
         ctx.rotate(Math.PI);
+
+        const totalLength = this.radius * 0.5;
+
+        this.drawNotches(totalLength);
+        ctx.rotate(Math.PI/2);
+        this.drawNotches(totalLength);
+        ctx.rotate(-Math.PI/2);
+
+        const toFromFlag = data?.toFromFlag ?? this.toFromFlag;
+        this.toFromFlag = toFromFlag;
+
+        this.drawToFromFlag(toFromFlag);
+
+        const needleOffset = data?.needleOffset ?? this.needleOffset;
+        this.needleOffset = needleOffset;
+
+        this.drawVerticalNeedle(needleOffset * totalLength / 254);
+    }
+
+    drawToFromFlag(toFromFlag) {
+        if (toFromFlag == 0) return;
+
+        const ctx = this.ctx;
+
+        ctx.translate(this.radius * 0.35, -this.radius * 0.3);
+
+        ctx.fillStyle = 'white';
+
+        if (toFromFlag == 2) ctx.rotate(Math.PI);
+
+        ctx.beginPath();
+        ctx.moveTo(0, -this.radius * 0.15);
+        ctx.lineTo(-this.radius * 0.15, 0);
+        ctx.lineTo(this.radius * 0.15, 0);
+        ctx.fill();
+
+        if (toFromFlag == 2) ctx.rotate(Math.PI);
+
+        ctx.font = "bold " + this.radius*0.08 + "px arial";
+        ctx.textBaseline = "middle";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "black";
+
+        ctx.fillText(toFromFlag == 1 ? 'TO' : 'FROM', 0, toFromFlag == 1 ? -this.radius*0.04 : this.radius*0.04);
+
+        ctx.translate(-this.radius * 0.35, this.radius * 0.3);
+    }
+
+    drawVerticalNeedle(offset) {
+        const ctx = this.ctx;
+
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+        ctx.moveTo(offset, -this.radius * 0.55);
+        ctx.lineTo(offset, this.radius * 0.55);
+        ctx.stroke();
+    }
+
+    drawNotches(totalLength) {
+        const ctx = this.ctx;
+
+        const ticks = 5;
+        const tick = totalLength/ticks;
+
+        const tickLength = this.radius * 0.05;
+
+        ctx.strokeStyle = '#888';
+
+        for (let i = -ticks; i <= ticks; i++) {
+            ctx.beginPath();
+            ctx.moveTo(i*tick, -tickLength);
+            ctx.lineTo(i*tick, tickLength);
+            ctx.stroke();
+        }
     }
 
     drawTriangle() {

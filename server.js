@@ -50,6 +50,8 @@ io.on('connection', (socket) => {
             temperature: simData.temperature,
             cdi1: simData.cdi1,
             cdi2: simData.cdi2,
+            navToFrom1: simData.navToFrom1,
+            navToFrom2: simData.navToFrom2,
             suction: simData.suction,
             ammeter:-simData.ammeter
         };
@@ -122,6 +124,8 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     handle.addToDataDefinition(DEFINITION_1, 'TOTAL AIR TEMPERATURE', 'celsius', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:1', 'number', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:2', 'number', SimConnectDataType.FLOAT64);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV TOFROM:1', 'Enum', SimConnectDataType.INT32);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV TOFROM:2', 'Enum', SimConnectDataType.INT32);
     handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
 
@@ -152,6 +156,8 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
                     temperature: recvSimObjectData.data.readFloat64(),
                     cdi1: recvSimObjectData.data.readFloat64(),
                     cdi2: recvSimObjectData.data.readFloat64(),
+                    navToFrom1: recvSimObjectData.data.readInt32(), // Int 32
+                    navToFrom2: recvSimObjectData.data.readInt32(), // Int 32
                     suction: recvSimObjectData.data.readFloat64(),
                     ammeter: recvSimObjectData.data.readFloat64(),
                 }
