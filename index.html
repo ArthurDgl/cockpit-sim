@@ -9,7 +9,8 @@
     <link rel="stylesheet" type="text/css" href="/css/flight-indicators.css" />
     <script src="/js/flight-indicators.js"></script>
 
-    <link rel="stylesheet" type="text/css" href="/custom/style.css" />
+    <!-- <link rel="stylesheet" type="text/css" href="/custom/style.css" /> -->
+    <link rel="stylesheet" href="css/style.css">
     <script src="/custom/Gauges.js"></script>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -19,22 +20,90 @@
 </head>
 
 <body>
-    <div class="instruments">
-        <div class="ecran-gauge">
+    <div class="container1">
+        <div class="box1">
             <canvas id="gauge-airSpeed"></canvas>
         </div>
-        <div class="ecran-gauge">
-            <canvas id="gauge-engineSpeed"></canvas>
+
+        <div class="box2">
+            <div id="instrument-attitude"></div>
         </div>
-        <div class="ecran-gauge">
+
+        <div class="box3">
+            <div id="instrument-turn_coordinator"></div>
+        </div>
+
+        <div class="box4">
+            <div id="instrument-heading"></div>
+        </div>
+
+        <div class="box5">
+            <div id="instrument-altitude"></div>
+        </div>
+
+        <div class="box6">
+            <div id="instrument-vertical"></div>
+        </div>
+
+        <div class="box7">
             <canvas id="gauge-fuel"></canvas>
         </div>
-        <div class="ecran-gauge">
+        
+        <div class="box8">
             <canvas id="gauge-oil"></canvas>
         </div>
-        
 
     </div>
+        
+
+    <div class="container2">    
+        <div class="box9">
+            <canvas id="compass-2" width="200" height="200"></canvas>
+        </div>
+
+        <div class="box10">
+            <canvas id="cdi-1" width="200" height="200"></canvas>
+        </div>
+
+        <div class="box11">
+            <canvas id="gauge-engineSpeed"></canvas>
+        </div>
+
+        <div class="box12">
+            cdi-2, on a pas encore
+        </div>
+
+        <div class="box13">
+            <canvas id="analog-clock" width="200" height="200"></canvas>
+        </div>
+
+        <div class="box14">
+            <canvas id="compass-1" width="200" height="200"></canvas>
+        </div>
+        
+    </div>
+    <div class="container3">
+            <div class="box15">
+                <canvas id="thermometer" width="200" height = "200"></canvas>
+            </div>
+            
+            <div class="box16">
+                pas encore la suction gauge
+            </div>
+            <div class="box17">
+                pas encore d'ammeter
+            </div>
+    </div>
+
+
+
+
+    
+
+        
+
+
+    
     
     <div class="control-panel">
         <div class="slider-group">
@@ -63,20 +132,9 @@
     </div>
 
     
-    <div class="instruments">
-        <div id="instrument-attitude"></div>
-        <div id="instrument-heading"></div>
-        <div id="instrument-vitesse"></div>
-        <div id="instrument-vertical"></div>
-        <div id="instrument-altitude"></div>
-        <div id="instrument-turn_coordinator"></div>
-    </div>
+    
 
-    <canvas id="analog-clock" width="200" height="200"></canvas>
-    <canvas id="compass-1" width="200" height="200"></canvas>
-    <canvas id="compass-2" width="200" height="200"></canvas>
-    <canvas id="cdi-1" width="200" height="200"></canvas>
-    <canvas id="thermometer" width="200" height = "200"></canvas>
+    
 
     <script src="/custom/main.js"></script>
 </body>
