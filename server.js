@@ -203,7 +203,7 @@ parser.on('data', (line) => {
     if (data.action === 'ROT_TEST') {
         const angle = ((data.value % 360) + 360) % 360;
 
-        console.log(angle);
+        // console.log(angle);
 
         handlePilotAction('OBS1', angle, {});
         globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
