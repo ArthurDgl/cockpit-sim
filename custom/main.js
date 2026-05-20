@@ -101,6 +101,7 @@ socket.on('planeData', (data) => {
     suctionGauge.update({angle: data.suction*30+210});
     ammeter.update({angle: (data.ammeter+60)*1.5+270});
     CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1});
+    CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2});
 });
 
 socket.on('physicalAction', (data) => {
