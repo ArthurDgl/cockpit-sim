@@ -51,7 +51,7 @@ io.on('connection', (socket) => {
             cdi1: simData.cdi1,
             cdi2: simData.cdi2,
             suction: simData.suction,
-            ammeter:simData.ammeter
+            ammeter:-simData.ammeter
         };
         socket.emit('planeData', data);
     }, 100);
