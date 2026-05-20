@@ -69,6 +69,8 @@ server.listen(3000, () => {
 
 const EVENT_ID_PAUSE = 1;
 const EVENT_VOR1_SET = 2;
+const EVENT_AILERON_SET = 3;
+const EVENT_ELEVATOR_SET = 4;
 
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
@@ -160,13 +162,24 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     });
 
     handle.mapClientEventToSimEvent(EVENT_VOR1_SET, 'VOR1_SET');
+    handle.mapClientEventToSimEvent(EVENT_AILERON_SET, 'AILERON_SET');
+    handle.mapClientEventToSimEvent(EVENT_ELEVATOR_SET, 'ELEVATOR_SET');
 
     handle.addClientEventToNotificationGroup(1, EVENT_VOR1_SET, false);
+    handle.addClientEventToNotificationGroup(1, EVENT_AILERON_SET, false);
+    handle.addClientEventToNotificationGroup(1, EVENT_ELEVATOR_SET, false);
     handle.setNotificationGroupPriority(1, 1);
 
     handlePilotAction = (command, value, data) => {
         if (command === 'OBS1') {
             handle.transmitClientEvent(0, EVENT_VOR1_SET, value, 1, 0);
+        }
+        else if (command === 'YOKE') {
+            // console.log(value);
+            const aileron = Math.max(Math.min(Math.floor(-value.roll / 2 * 16384), 16384), -16383) >>> 0;
+            const elevator = Math.max(Math.min(Math.floor(value.pitch / 2 * 16384), 16384), -16383) >>> 0;
+            handle.transmitClientEvent(0, EVENT_AILERON_SET, aileron, 1, 0);
+            handle.transmitClientEvent(0, EVENT_ELEVATOR_SET, elevator, 1, 0);
         }
     }
 })
@@ -182,18 +195,22 @@ const port = new SerialPort({
 const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
 parser.on('data', (line) => {
-    console.log(line);
+    // console.log(line);
     data = JSON.parse(line);
-    console.log(data.value);
+    
+    if (!data) return;
 
-    if (!data || !data.value) return;
+    if (data.action === 'ROT_TEST') {
+        const angle = ((data.value % 360) + 360) % 360;
 
-    const angle = ((data.value % 360) + 360) % 360;
+        console.log(angle);
 
-    console.log(angle);
-
-    handlePilotAction('OBS1', angle, {});
-    globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
+        handlePilotAction('OBS1', angle, {});
+        globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
+    }
+    else if (data.action === 'YOKE') {
+        handlePilotAction('YOKE', data, {});
+    }
 });
 
 port.on('open', () => {
