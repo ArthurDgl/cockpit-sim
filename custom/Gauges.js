@@ -293,3 +293,21 @@ class Thermometer extends CustomGauge{
         this.drawNeedle(data.angle ?? 0, "white");
     }
 }
+
+class Suction_Gauge extends CustomGauge{
+    constructor(canvasId, name = 'inHg') {
+        super(canvasId, name, [0, 2, 4, 6, 8, 10], 10, false, -150, 150);
+    }
+    drawMiddleLayer(data) {
+        this.drawNeedle(data.angle ?? 0, "white");
+    }
+}
+
+class AMmeter extends CustomGauge{
+    constructor(canvasId, name = 'AMP') {
+        super(canvasId, name, [-60,-30,0,30,60], 3, false, -90,90);
+    }
+    drawMiddleLayer(data) {
+        this.drawNeedle(data.angle ?? 0, "white");
+    }
+}

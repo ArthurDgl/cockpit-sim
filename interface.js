@@ -29,9 +29,9 @@ io.on('connection', (socket) => {
         adfHeading += 1;
 
         const data = {
-            altitude: randomBetween(0,400),
-            airSpeed: randomBetween(0,400),
-            roll: randomBetween(0,400),
+            altitude:       randomBetween(0,400),
+            airSpeed:       randomBetween(0,400),
+            roll:           randomBetween(0,400),
             pitch:          randomBetween(0,400),
             verticalSpeed:  randomBetween(0,400),
             engineSpeed:    randomBetween(0,400),
@@ -42,7 +42,9 @@ io.on('connection', (socket) => {
             turnRate:       randomBetween(0,400),
             ball:           randomBetween(0,400),
             temperature:    randomBetween(-50,70),
-            time:           randomBetween(0,400)
+            time:           randomBetween(0,400),
+            suction:        randomBetween(0,10),
+            ammeter:        randomBetween(-60,60)
         };
         socket.emit('planeData', data);
     }, 100);

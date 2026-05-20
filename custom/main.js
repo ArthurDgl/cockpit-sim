@@ -83,7 +83,8 @@ const magneticCompass = new Compass('compass-1', 'Compass');
 const adfNeedle = new Compass('compass-2', 'ADF');
 const analogClock = new AnalogClock('analog-clock');
 const thermometer = new Thermometer('thermometer');
-
+const suctionGauge = new Suction_Gauge('suction-gauge');
+const ammeter = new AMmeter('ammeter');
 const CDI1 = new CourseDeviationIndicator('cdi-1');
 
 socket.on('planeData', (data) => {
@@ -95,6 +96,8 @@ socket.on('planeData', (data) => {
     adfNeedle.update({angle: data.adfHeading});
     analogClock.update({time: data.time});
     thermometer.update({angle: (data.temperature + 50)*2.5+210})
+    suctionGauge.update({angle: data.suction*30+210});
+    ammeter.update({angle: (data.ammeter+60)*1.5+270});
 });
 
 socket.on('physicalAction', (data) => {
