@@ -24,11 +24,11 @@ function createFlightIndicator(elementId, type, options = {}) {
     return result;
 }
 
-function createGauge(elementId, title, max, units) {
+function createGauge(elementId, title, max, units, size) {
     const result = new RadialGauge({
         renderTo: elementId,
-        width: 200,
-        height: 200,
+        width: size,
+        height: size,
         units: units,
         title: title,
         minValue: 0,
@@ -74,10 +74,10 @@ const indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', Flig
 const indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
 const indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
 
-const gaugeAirSpeed = createGauge('gauge-airSpeed', 'Air Speed', 300, 'kts');
-const gaugeEngineSpeed = createGauge('gauge-engineSpeed', 'Engine Speed', 3500, 'RPM');
-const gaugeFuel = createGauge('gauge-fuel', 'Fuel', 100, '%');
-const gaugeOil = createGauge('gauge-oil', 'Oil', 100, '%');
+const gaugeAirSpeed = createGauge('gauge-airSpeed', 'Air Speed', 300, 'kts', 200);
+const gaugeEngineSpeed = createGauge('gauge-engineSpeed', 'Engine Speed', 3500, 'RPM', 200);
+const gaugeFuel = createGauge('gauge-fuel', 'Fuel', 100, '%', 160);
+const gaugeOil = createGauge('gauge-oil', 'Oil', 100, '%', 160);
 
 const magneticCompass = new Compass('compass-1', 'Compass');
 const adfNeedle = new Compass('compass-2', 'ADF');
@@ -86,6 +86,8 @@ const thermometer = new Thermometer('thermometer');
 const suctionGauge = new Suction_Gauge('suction-gauge');
 const ammeter = new AMmeter('ammeter');
 const CDI1 = new CourseDeviationIndicator('cdi-1');
+const CDI2 = new CourseDeviationIndicator('cdi-2');
+
 
 socket.on('planeData', (data) => {
     updateIndicators(data);
