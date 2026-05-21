@@ -168,17 +168,20 @@ class FlightIndicators {
     }
 
     toggleBox(hide) {
+        return;
         let box = this.placeholder.querySelector('img.box.background')
         box.classList.toggle('hidden', hide)
     }
 
     showBox() {
+        return;
         // let box = this.placeholder.querySelector('img.box.background')
         let box = this.placeholder.querySelector('div.instrument img.box.background')
         box.classList.remove('hidden')
     }
 
     hideBox() {
+        return;
         let box = this.placeholder.querySelector('div.instrument img.box.background')
         box.classList.add('hidden')
     }
@@ -247,7 +250,7 @@ class FlightIndicators {
     }
 
     createFiBoxImage(imgDirectory) {
-        const fiBox = this.createImgBox(imgDirectory, 'fi_box.svg')
+        const fiBox = document.createElement('div'); //this.createImgBox(imgDirectory, 'fi_box.svg')
         fiBox.classList.add('background')
 
         return fiBox

@@ -19,7 +19,6 @@ function createFlightIndicator(elementId, type, options = {}) {
     const el = document.getElementById(elementId);
     if (!el) return;
     const result = new FlightIndicators(el, type, options);
-    if(options.showBox !== false) result.showBox();
 
     return result;
 }
