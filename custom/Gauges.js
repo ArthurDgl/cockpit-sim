@@ -417,6 +417,15 @@ class AirSpeed extends CustomGauge{
         super(canvasId, name, [0, 75, 150, 225, 300], 2, false, -150, 150);
     }
     drawMiddleLayer(data) {
-        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");
+        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "white");
+    }
+}
+
+class EngineSpeed extends CustomGauge{
+    constructor(canvasId, name = 'kts') {
+        super(canvasId, name, [0, 500, 1000, 1500, 2000, 2500, 3000, 3500], 2, false, -135, 135);
+    }
+    drawMiddleLayer(data) {
+        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "white");
     }
 }

@@ -34,7 +34,7 @@ io.on('connection', (socket) => {
             roll:           randomBetween(0,400),
             pitch:          randomBetween(0,400),
             verticalSpeed:  randomBetween(0,400),
-            engineSpeed:    randomBetween(0,400),
+            engineSpeed:    randomBetween(0,3500),
             fuel:           randomBetween(0,100),
             heading:        randomBetween(0,400),
             adfHeading:     randomBetween(0,400),
