@@ -24,28 +24,28 @@ function createFlightIndicator(elementId, type, options = {}) {
     return result;
 }
 
-function createGauge(elementId, title, max, units, size) {
-    const result = new RadialGauge({
-        renderTo: elementId,
-        width: size,
-        height: size,
-        units: units,
-        title: title,
-        minValue: 0,
-        maxValue: max,
-        majorTicks: ["0", (max/4).toString(), (max/2).toString(), (max*3/4).toString(), max.toString()],
-        minorTicks: 2,
-        highlights: [{ from: max*0.8, to: max, color: 'rgba(255,0,0,.3)' }],
-        colorPlate: "#222",
-        colorNumbers: "#eee",
-        needleType: "arrow",
-        animatedValue: true,
-        animationDuration: 500
-    });
-    result.draw();
+// function createGauge(elementId, title, max, units, size) {
+//     const result = new RadialGauge({
+//         renderTo: elementId,
+//         width: size,
+//         height: size,
+//         units: units,
+//         title: title,
+//         minValue: 0,
+//         maxValue: max,
+//         majorTicks: ["0", (max/4).toString(), (max/2).toString(), (max*3/4).toString(), max.toString()],
+//         minorTicks: 2,
+//         highlights: [{ from: max*0.8, to: max, color: 'rgba(255,0,0,.3)' }],
+//         colorPlate: "#222",
+//         colorNumbers: "#eee",
+//         needleType: "arrow",
+//         animatedValue: true,
+//         animationDuration: 500
+//     });
+//     result.draw();
 
-    return result;
-}
+//     return result;
+// }
 
 function updateIndicators(data) {
     indicatorAttitude?.updateRoll(data.roll);
@@ -74,8 +74,8 @@ const indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', Flig
 const indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
 const indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
 
-const gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Air Speed Kts');
-const gaugeEngineSpeed = createGauge('gauge-engineSpeed', 'Engine Speed', 3500, 'RPM', 200);
+const gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Kts');
+const gaugeEngineSpeed = new EngineSpeed('gauge-engineSpeed', 'RPM');
 const gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
 const gaugeOil = new Oil('gauge-oil', 'Oil %');
 
@@ -105,6 +105,7 @@ socket.on('planeData', (data) => {
     gaugeFuel.update({angle: data.fuel*3+210});
     gaugeOil.update({angle: data.oil*3+210});
     gaugeAirSpeed.update({airSpeed: data.airSpeed});
+    gaugeEngineSpeed.update({angle: data.engineSpeed*0.07714+225})
 });
 
 // socket.on('physicalAction', (data) => {
