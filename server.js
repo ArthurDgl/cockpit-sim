@@ -19,44 +19,17 @@ app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
 
-let globalSocket;
+let emitOnSocket = (message, data) => {};
 io.on('connection', (socket) => {
-    globalSocket = socket;
     console.log('Client has connected');
 
     socket.on('pilotAction', (data) => {
-        // console.log(`received : ${data.command} : ${data.value}`);
-        
         handlePilotAction(data.command, data.value, data);
     });
 
-    const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
-
-    const tempSim = setInterval(() => {
-        const data = {
-            altitude: simData.altitude,
-            airSpeed: simData.airSpeed,
-            roll: simData.roll,
-            pitch: simData.pitch,
-            verticalSpeed: simData.verticalSpeed/1000,
-            engineSpeed: simData.engineSpeed,
-            fuel: simData.fuel,
-            heading: simData.heading,
-            adfHeading: simData.adfHeading,
-            oil: simData.oil,
-            turnRate: simData.turnRate*8,
-            ball: simData.ball*39.6,
-            time: simData.time,
-            temperature: simData.temperature,
-            cdi1: simData.cdi1,
-            cdi2: simData.cdi2,
-            navToFrom1: simData.navToFrom1,
-            navToFrom2: simData.navToFrom2,
-            suction: simData.suction,
-            ammeter:-simData.ammeter
-        };
-        socket.emit('planeData', data);
-    }, 100);
+    emitOnSocket = (message, data) => {
+        socket.emit(message, data);
+    };
     
     socket.on('disconnect', () => {
         console.log('Client disconnected');
@@ -77,8 +50,30 @@ const EVENT_ELEVATOR_SET = 4;
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
 
-let simData = {};
+function preparePlaneData(simData) {
+    const data = simData;
+    data.verticalSpeed /= 1000;
+    data.turnRate *= 8;
+    data.ball *= 39.6;
+    data.ammeter *= -1;
+    
+    return data;
+}
 
+let lastSendTime = Date.now();
+const minElapsedTime = 10;
+function trySendingSimData(simData) {
+    const now = Date.now();
+    const elapsed = now - lastSendTime;
+    lastSendTime = now;
+
+    if (elapsed < minElapsedTime) return;
+
+    const data = preparePlaneData(simData);
+    emitOnSocket('planeData', data);
+}
+
+let simData = {};
 simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
 .then(({recvOpen, handle}) => {
     console.log('Connected to', recvOpen.applicationName);
@@ -126,6 +121,8 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:2', 'number', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'NAV TOFROM:1', 'Enum', SimConnectDataType.INT32);
     handle.addToDataDefinition(DEFINITION_1, 'NAV TOFROM:2', 'Enum', SimConnectDataType.INT32);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV OBS:1', 'degrees', SimConnectDataType.INT32);
+    handle.addToDataDefinition(DEFINITION_1, 'NAV OBS:2', 'degrees', SimConnectDataType.INT32);
     handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
     handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
 
@@ -158,10 +155,13 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
                     cdi2: recvSimObjectData.data.readFloat64(),
                     navToFrom1: recvSimObjectData.data.readInt32(), // Int 32
                     navToFrom2: recvSimObjectData.data.readInt32(), // Int 32
+                    navOBS1: recvSimObjectData.data.readInt32(), // Int 32
+                    navOBS2: recvSimObjectData.data.readInt32(), // Int 32
                     suction: recvSimObjectData.data.readFloat64(),
                     ammeter: recvSimObjectData.data.readFloat64(),
                 }
                 simData = receivedData;
+                trySendingSimData(receivedData);
                 break;
             }
         }
@@ -193,12 +193,18 @@ simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     console.log('Connection failed:', error);
 });
 
+function limit(x, n) {
+    return ((x % n) + n) % n;
+}
+
 const port = new SerialPort({
   path: 'COM3',
   baudRate: 115200
 });
 
 const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+
+const inputOffsets = {};
 
 parser.on('data', (line) => {
     // console.log(line);
@@ -207,12 +213,16 @@ parser.on('data', (line) => {
     if (!data) return;
 
     if (data.action === 'ROT_TEST') {
-        const angle = ((data.value % 360) + 360) % 360;
+        const angle = limit(data.value, 360);
 
-        // console.log(angle);
+        if (inputOffsets.navOBS1 == undefined && simData.navOBS1 != undefined) {
+            inputOffsets.navOBS1 = simData.navOBS1 - angle;
+        }
 
-        handlePilotAction('OBS1', angle, {});
-        globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
+        const offsetAngle = limit(angle + (inputOffsets.navOBS1 ?? 0), 360);
+
+        handlePilotAction('OBS1', offsetAngle, {});
+        // globalSocket.emit('physicalAction', {action:'OBS1', value:angle});
     }
     else if (data.action === 'YOKE') {
         handlePilotAction('YOKE', data, {});

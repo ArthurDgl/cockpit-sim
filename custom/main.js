@@ -97,15 +97,15 @@ socket.on('planeData', (data) => {
     magneticCompass.update({angle: data.heading});
     adfNeedle.update({angle: data.adfHeading});
     analogClock.update({time: data.time});
-    thermometer.update({angle: (data.temperature + 50)*2.5+210})
+    thermometer.update({angle: (data.temperature + 50)*2.5+210});
     suctionGauge.update({angle: data.suction*30+210});
     ammeter.update({angle: (data.ammeter+60)*1.5+270});
-    CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1});
-    CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2});
+    CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1, dialOffset: data.navOBS1});
+    CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2, dialOffset: data.navOBS2});
 });
 
-socket.on('physicalAction', (data) => {
-    if (data.action === 'OBS1') {
-        CDI1.update({dialOffset: data.value});
-    }
-}); 
+// socket.on('physicalAction', (data) => {
+//     if (data.action === 'OBS1') {
+//         CDI1.update({dialOffset: data.value});
+//     }
+// }); 
