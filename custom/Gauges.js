@@ -393,3 +393,30 @@ class AMmeter extends CustomGauge{
         this.drawNeedle(data.angle ?? 0, "white");
     }
 }
+
+class Fuel extends CustomGauge{
+    constructor(canvasId, name = '%') {
+        super(canvasId, name, [0, 25, 50, 75, 100], 2, false, -150, 150);
+    }
+    drawMiddleLayer(data) {
+        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");
+    }
+}
+
+class Oil extends CustomGauge{
+    constructor(canvasId, name = '%') {
+        super(canvasId, name, [0, 25, 50, 75, 100], 2, false, -150, 150);
+    }
+    drawMiddleLayer(data) {
+        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");
+    }
+}
+
+class AirSpeed extends CustomGauge{
+    constructor(canvasId, name = 'kts') {
+        super(canvasId, name, [0, 75, 150, 225, 300], 2, false, -150, 150);
+    }
+    drawMiddleLayer(data) {
+        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");
+    }
+}

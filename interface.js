@@ -30,15 +30,15 @@ io.on('connection', (socket) => {
 
         const data = {
             altitude:       randomBetween(0,400),
-            airSpeed:       randomBetween(0,400),
+            airSpeed:       randomBetween(0,300),
             roll:           randomBetween(0,400),
             pitch:          randomBetween(0,400),
             verticalSpeed:  randomBetween(0,400),
             engineSpeed:    randomBetween(0,400),
-            fuel:           randomBetween(0,400),
+            fuel:           randomBetween(0,100),
             heading:        randomBetween(0,400),
             adfHeading:     randomBetween(0,400),
-            oil:            randomBetween(0,400),
+            oil:            randomBetween(0,100),
             turnRate:       randomBetween(0,400),
             ball:           randomBetween(0,400),
             temperature:    randomBetween(-50,70),

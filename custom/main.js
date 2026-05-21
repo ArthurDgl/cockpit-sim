@@ -74,10 +74,10 @@ const indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', Flig
 const indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
 const indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
 
-const gaugeAirSpeed = createGauge('gauge-airSpeed', 'Air Speed', 300, 'kts', 200);
+const gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Air Speed Kts');
 const gaugeEngineSpeed = createGauge('gauge-engineSpeed', 'Engine Speed', 3500, 'RPM', 200);
-const gaugeFuel = createGauge('gauge-fuel', 'Fuel', 100, '%', 160);
-const gaugeOil = createGauge('gauge-oil', 'Oil', 100, '%', 160);
+const gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+const gaugeOil = new Oil('gauge-oil', 'Oil %');
 
 const magneticCompass = new Compass('compass-1', 'Compass');
 const adfNeedle = new Compass('compass-2', 'ADF');
@@ -102,6 +102,9 @@ socket.on('planeData', (data) => {
     ammeter.update({angle: (data.ammeter+60)*1.5+270});
     CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1, dialOffset: data.navOBS1});
     CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2, dialOffset: data.navOBS2});
+    gaugeFuel.update({angle: data.fuel*3+210});
+    gaugeOil.update({angle: data.oil*3+210});
+    gaugeAirSpeed.update({angle: data.airSpeed+210});
 });
 
 // socket.on('physicalAction', (data) => {
