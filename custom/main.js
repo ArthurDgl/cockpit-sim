@@ -104,7 +104,7 @@ socket.on('planeData', (data) => {
     CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2, dialOffset: data.navOBS2});
     gaugeFuel.update({angle: data.fuel*3+210});
     gaugeOil.update({angle: data.oil*3+210});
-    gaugeAirSpeed.update({angle: data.airSpeed+210});
+    gaugeAirSpeed.update({airSpeed: data.airSpeed});
 });
 
 // socket.on('physicalAction', (data) => {

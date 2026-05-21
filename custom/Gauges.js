@@ -27,6 +27,8 @@ class CustomGauge {
         this.startAngle = startAngle;
         this.stopAngle = stopAngle;
 
+        this.colorZones = [];
+
         this.dialOffset = 0;
 
         if ((this.stopAngle - this.startAngle) % 360 == 0) {
@@ -63,6 +65,21 @@ class CustomGauge {
 
     drawMiddleLayer(data) {
         return;
+    }
+
+    drawColorZones(radius, width) {
+        const ctx = this.ctx;
+
+        ctx.lineWidth = width/1.5;
+
+        this.colorZones.forEach((zone) => {
+            ctx.strokeStyle = zone.style;
+            ctx.rotate(zone.start / 180 * Math.PI);
+            ctx.beginPath();
+            ctx.arc(0, 0, radius - width/1.5, 0, (zone.end - zone.start) / 180 * Math.PI);
+            ctx.stroke();
+            ctx.rotate(-zone.start / 180 * Math.PI);
+        })
     }
 
     drawFace(dialOffset) {
@@ -105,6 +122,8 @@ class CustomGauge {
         const offsetAngle = (this.stopAngle - this.startAngle) / count;
 
         const start = this.swapSpokesAndLabels ? this.innerDialRadius : this.radius - this.outerLineWidth/2;
+
+        if (this.colorZones.length > 0) this.drawColorZones(start, this.swapSpokesAndLabels ? -this.spokeLength * 0.75 : this.spokeLength * 0.75);
 
         for (let i = 0; i <= count; i++) {
             const deg = this.startAngle + i * offsetAngle + dialOffset;
@@ -372,7 +391,7 @@ class Thermometer extends CustomGauge{
         super(canvasId, name, [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], 5, false, -150, 150);
     }
     drawMiddleLayer(data) {
-        this.drawNeedle(data.angle ?? 0, "white");
+        this.drawNeedle(data.angle ?? 0, "#CCC");
     }
 }
 
@@ -381,7 +400,7 @@ class Suction_Gauge extends CustomGauge{
         super(canvasId, name, [0, 2, 4, 6, 8, 10], 10, false, -150, 150);
     }
     drawMiddleLayer(data) {
-        this.drawNeedle(data.angle ?? 0, "white");
+        this.drawNeedle(data.angle ?? 0, "#CCC");
     }
 }
 
@@ -390,7 +409,7 @@ class AMmeter extends CustomGauge{
         super(canvasId, name, [-60,-30,0,30,60], 3, false, -90,90);
     }
     drawMiddleLayer(data) {
-        this.drawNeedle(data.angle ?? 0, "white");
+        this.drawNeedle(data.angle ?? 0, "#CCC");
     }
 }
 
@@ -414,9 +433,28 @@ class Oil extends CustomGauge{
 
 class AirSpeed extends CustomGauge{
     constructor(canvasId, name = 'kts') {
-        super(canvasId, name, [0, 75, 150, 225, 300], 2, false, -150, 150);
+        super(canvasId, name, [40, 60, 80, 100, 120, 140, 160], 2, false, 1/7 * 180, 360 - 1/7 * 180);
+
+        this.colorZones = [
+            {
+                style: 'green',
+                start: 1/7 * 180 - 90,
+                end: 4.5/7 * 180
+            },
+            {
+                style: 'yellow',
+                start: 4.5/7 * 180,
+                end: 8.5/7 * 180
+            },
+            {
+                style: 'red',
+                start: 8.5/7 * 180,
+                end: 270 - 1/7 * 180
+            }
+        ];
     }
     drawMiddleLayer(data) {
-        this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");
+        const angle = Math.max(0, (data.airSpeed - 30)*180/7/10);
+        this.drawNeedle(angle ?? 0, "#CCC");
     }
 }
