@@ -23,6 +23,101 @@ function createFlightIndicator(elementId, type, options = {}) {
     return result;
 }
 
+// --- FONCTION POUR RENDRE LES JAUGES DÉPLAÇABLES, ZOOMABLES ET PERMANENTES ---
+
+function makeDraggableAndZoomable(element) {
+    const id = element.className; // Identifiant unique (ex: 'box1')
+    let isDragging = false;
+    let initialX, initialY;
+
+    // 💾 Récupère la position ET le zoom sauvegardés (ou valeurs par défaut)
+    const savedData = JSON.parse(localStorage.getItem(`gauge_data_${id}`)) || { x: 0, y: 0, scale: 1.0 };
+    let xOffset = savedData.x;
+    let yOffset = savedData.y;
+    let currentScale = savedData.scale;
+
+    // Applique la position et le zoom au chargement de la page
+    element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
+    element.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
+    element.style.cursor = 'grab';
+
+    // --- ÉCOUTEURS POUR LE DÉPLACEMENT (DRAG) ---
+    element.addEventListener("mousedown", dragStart);
+    document.addEventListener("mouseup", dragEnd);
+    document.addEventListener("mousemove", drag);
+
+    // --- ÉCOUTEUR POUR LE ZOOM (MOLETTE) ---
+    element.addEventListener("wheel", handleWheel, { passive: false });
+
+    function dragStart(e) {
+        if (e.button === 0) { // Clic gauche
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            isDragging = true;
+            element.style.cursor = 'grabbing';
+            element.style.zIndex = 1000;
+        }
+    }
+
+    function dragEnd(e) {
+        if (isDragging) {
+            initialX = xOffset;
+            initialY = yOffset;
+            isDragging = false;
+            element.style.cursor = 'grab';
+            element.style.zIndex = '';
+            saveState(); // Sauvegarde après déplacement
+        }
+    }
+
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            xOffset = e.clientX - initialX;
+            yOffset = e.clientY - initialY;
+            updateTransform();
+        }
+    }
+
+    function handleWheel(e) {
+        e.preventDefault(); // Empêche la page entière de scroller
+
+        // Sens de la molette : e.deltaY < 0 signifie qu'on roule vers le haut (zoom avant)
+        const zoomFactor = 0.05; // Ajuste cette valeur pour rendre le zoom plus ou moins rapide
+        if (e.deltaY < 0) {
+            currentScale += zoomFactor;
+        } else {
+            currentScale -= zoomFactor;
+        }
+
+        // Limites de zoom pour éviter que la jauge devienne minuscule ou géante
+        currentScale = Math.max(0.3, Math.min(currentScale, 3.0));
+
+        updateTransform();
+        saveState(); // Sauvegarde après zoom
+    }
+
+    // Applique les modifications CSS combinées (important de mettre les deux ensemble)
+    function updateTransform() {
+        element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
+    }
+
+    // Fonction unique pour sauvegarder la position ET le zoom
+    function saveState() {
+        localStorage.setItem(`gauge_data_${id}`, JSON.stringify({
+            x: xOffset,
+            y: yOffset,
+            scale: currentScale
+        }));
+    }
+}
+
+// Sélectionne et applique à toutes les boîtes (box1, box2, etc.)
+const allBoxes = document.querySelectorAll('div[class^="box"]');
+allBoxes.forEach(box => {
+    makeDraggableAndZoomable(box);
+});
+
 // function createGauge(elementId, title, max, units, size) {
 //     const result = new RadialGauge({
 //         renderTo: elementId,
