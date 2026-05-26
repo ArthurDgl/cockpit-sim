@@ -7,10 +7,17 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+// const fs = require('fs');
+// const fileName = './presets/default.json';
+
+const configFile = require("./presets/default.json");
+
 app.use(express.static(__dirname));
 
 io.on('connection', (socket) => {
     console.log('Client has connected');
+
+    socket.emit('loadConfig', configFile);
 
     socket.on('pilotAction', (data) => {
         console.log(`received : ${data.command} : ${data.value}`);

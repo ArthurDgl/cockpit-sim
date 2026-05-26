@@ -11,6 +11,9 @@ body {
     gap: 20px;
     margin-bottom: 30px;
 }
+.gauge{
+    position: absolute;
+}
 
 .control-panel {
     background: #222;

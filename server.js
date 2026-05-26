@@ -15,6 +15,12 @@ const SimConnectDataType = simConnect.SimConnectDataType;
 const SimConnectConstants = simConnect.SimConnectConstants;
 const SimConnectPeriod = simConnect.SimConnectPeriod;
 
+
+const  defaultConfig = require('defaultConfig');
+const path = require('./presets/default.json');
+console.log(defaultConfig);
+
+
 app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
@@ -22,6 +28,7 @@ let handlePilotAction = ((command, value, data) => {return;});
 let emitOnSocket = (message, data) => {};
 io.on('connection', (socket) => {
     console.log('Client has connected');
+    socket.emit('loadConfig', configjson);
 
     socket.on('pilotAction', (data) => {
         handlePilotAction(data.command, data.value, data);
