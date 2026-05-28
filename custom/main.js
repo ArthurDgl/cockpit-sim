@@ -289,8 +289,9 @@ socket.on('loadConfig', (data) => {
             }
             console.log(component.type, "créé")
             const elem = document.getElementById(component.type);
-            elem.style.transform = `translate3d(${component.x}px, ${component.y}px, 0) scale(${component.scale})`;
+            elem.style.position="absolute";
             elem.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
+            elem.style.transform = `translate3d(${component.x}px, ${component.y}px, 0) scale(${component.scale})`;
         });
     }
 
