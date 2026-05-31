@@ -1,0 +1,39 @@
+{
+    "PCFs" : [
+        {
+            "address": 0,
+            "pins" : [
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "cdi-1"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "cdi-1"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "cdi-1"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                }
+            ]
+        }
+    ]
+}

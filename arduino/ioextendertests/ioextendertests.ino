@@ -2,24 +2,48 @@
 #define PCF_1 0x20  
 
 volatile bool pcfInterrupt = false;
+uint8_t usedAddresses = 0;
 
 void setup() {
-  Serial.begin(9600);
-  Serial.println("Program started");
+  Serial.begin(115200);
+  printMessage("Program started");
 
   Wire.begin();
 
   Wire.beginTransmission(PCF_1);
   if(Wire.endTransmission() != 0) {
-    Serial.print(F("PCF not responding"));
-    Serial.println(PCF_1, HEX);
-    Serial.println(F("Aborting..."));
+    printMessage("PCF not responding : Aborting...");
     while(1);
   }
 
-  Wire.beginTransmission(PCF_1);
-  Wire.write(0b11111111);
-  Wire.endTransmission();
+  for (int i = 0; i < 8; i++) {
+    int address = convertIntToAddress(i);
+
+    Wire.beginTransmission(address);
+    if(Wire.endTransmission() != 0) {
+      printMessagePrefix();
+      Serial.print("PCF Extender ");
+      Serial.print(i);
+      Serial.print(" at address ");
+      Serial.print(address);
+      Serial.print(" isn't responding, ignoring it...");
+      printMessageSuffix();
+      continue;
+    }
+
+    printMessagePrefix();
+    Serial.print("Successfully connected to PCF Extender ");
+    Serial.print(i);
+    Serial.print(" at address ");
+    Serial.print(address);
+    printMessageSuffix();
+
+    Wire.beginTransmission(address);
+    Wire.write(0b11111111);
+    Wire.endTransmission();
+
+    usedAddresses |= 1 << i;
+  }
 
   pinMode(3, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(3), handlePCFInterrupt, FALLING);
@@ -30,22 +54,26 @@ void handlePCFInterrupt() {
 }
 
 void readI2C(int address) {
-  byte reponseI2C;
+  byte I2CResponse;
 
   Wire.requestFrom(address, 1);
 
   if(Wire.available()) {
-    reponseI2C = Wire.read();
-    print8bitValue(reponseI2C);
+    I2CResponse = Wire.read();
+    printPCFValue(address, I2CResponse);
   } else {
-    Serial.println(F("[ERROR] Failed to get value"));
+    printMessage("Failed to get value");
   }
 }
 
 void loop() {
   if (pcfInterrupt) {
     pcfInterrupt = false;
-    readI2C(PCF_1);
+
+    for (int i = 0; i < 8; i++) {
+      if (!((usedAddresses >> i) & 0b00000001)) continue;
+      readI2C(convertIntToAddress(i));
+    }
   }
 }
   
@@ -58,5 +86,34 @@ void print8bitValue(byte value) {
   Serial.print((value >> 2) & 0b00000001);
   Serial.print((value >> 1) & 0b00000001);
   Serial.print((value >> 0) & 0b00000001);
-  Serial.println();
+}
+
+void printPCFValue(int pcfAddress, byte value) {
+  Serial.print("{\"action\":\"PCFValue\",\"address\":");
+  Serial.print(convertAddressToInt(pcfAddress));
+  Serial.print(",\"value\":");
+  print8bitValue(value);
+  Serial.println("}");
+}
+
+void printMessagePrefix() {
+  Serial.print("{\"action\":\"message\",\"message\":\"");
+}
+
+void printMessageSuffix() {
+  Serial.println("\"}");
+}
+
+void printMessage(char *str) {
+  printMessagePrefix();
+  Serial.print(str);
+  printMessageSuffix();
+}
+
+int convertIntToAddress(int value) {
+  return 0x20 + value;
+}
+
+int convertAddressToInt(int address) {
+  return address - 0x20;
 }
