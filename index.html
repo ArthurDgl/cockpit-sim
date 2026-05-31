@@ -23,9 +23,8 @@
 
 
 <body>
-    <div class="gauge">
-        <canvas id="gauge-airSpeed"  width="200" height="200"></canvas>
-        <div id="instrument-attitude" ></div>
+        <canvas id="gauge-airSpeed" width="200" height="200"></canvas>
+        <div id="instrument-attitude"></div>
         <div id="instrument-turn_coordinator"></div>
         <div id="instrument-heading"></div>
         <div id="instrument-altitude"></div>
@@ -41,7 +40,6 @@
         <canvas id="thermometer" width="160" height = "160"></canvas>
         <canvas id="suction-gauge" width="160" height = "160"></canvas>
         <canvas id="ammeter" width="160" height = "160"></canvas>
-    </div>
     
 
     
@@ -136,7 +134,7 @@
 
     
     
-    <div class="control-panel">
+    <!-- <div class="control-panel">
         <div class="slider-group">
             <label><span>Throttle</span> <span id="value-throttle">0%</span></label>
             <input type="range" id="slider-throttle" min="0" max="100" value="0" step="1" 
@@ -160,7 +158,7 @@
             <input type="range" id="slider-flaps" min="0" max="360" value="0" step="1" 
                    oninput="sendPilotAction('OBS1', this.value)">
         </div>
-    </div>
+    </div> -->
 
     
     
