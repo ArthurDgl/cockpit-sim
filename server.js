@@ -22,6 +22,7 @@ app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
 
+
 let emitOnSocket = (message, data) => {};
 io.on('connection', (socket) => {
     console.log('Client has connected');

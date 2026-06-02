@@ -1,0 +1,106 @@
+{
+    "components": [
+        {
+            "type": "instrument-attitude",
+            "x": 514,
+            "y": 503,
+            "scale": 0.82
+        },
+        {
+            "type": "instrument-heading",
+            "x": 270,
+            "y": 340,
+            "scale": 1.2
+        },
+        {
+            "type": "instrument-vertical",
+            "x": 270,
+            "y": 550,
+            "scale": 1.2
+        },
+        {
+            "type": "instrument-altitude",
+            "x": 30,
+            "y": 550,
+            "scale": 1.2
+        },
+        {
+            "type": "instrument-turn_coordinator",
+            "x": 30,
+            "y": 340,
+            "scale": 1.2
+        },
+        {
+            "type": "gauge-airSpeed",
+            "x": 518,
+            "y": 330,
+            "scale": 0.68
+        },
+        {
+            "type": "gauge-engineSpeed",
+            "x": 770,
+            "y": 340,
+            "scale": 1
+        },
+        {
+            "type": "gauge-fuel",
+            "x": 50,
+            "y": 730,
+            "scale": 0.8
+        },
+        {
+            "type": "gauge-oil",
+            "x": 290,
+            "y": 730,
+            "scale": 0.8
+        },
+        {
+            "type": "compass-1",
+            "x": 1020,
+            "y": 550,
+            "scale": 1
+        },
+        {
+            "type": "compass-2",
+            "x": 770,
+            "y": 130,
+            "scale": 1
+        },
+        {
+            "type": "analog-clock",
+            "x": 770,
+            "y": 550,
+            "scale": 1
+        },
+        {
+            "type": "thermometer",
+            "x": 770,
+            "y": 730,
+            "scale": 0.8
+        },
+        {
+            "type": "suction-gauge",
+            "x": 920,
+            "y": 730,
+            "scale": 0.8
+        },
+        {
+            "type": "ammeter",
+            "x": 1060,
+            "y": 730,
+            "scale": 0.8
+        },
+        {
+            "type": "cdi-1",
+            "x": 1020,
+            "y": 130,
+            "scale": 1
+        },
+        {
+            "type": "cdi-2",
+            "x": 1020,
+            "y": 340,
+            "scale": 1
+        }
+    ]
+}
