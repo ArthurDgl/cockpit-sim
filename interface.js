@@ -18,7 +18,13 @@ app.use(express.static(__dirname));
 io.on('connection', (socket) => {
     console.log('Client has connected');
 
-    socket.emit('loadConfig', configFile);
+    const files = fs.readdirSync('./presets');
+    socket.emit("files", files);
+
+    socket.on('loadPreset', (name) => {
+        const file = fs.existsSync(path.join(__dirname, 'presets', `${name}`)) ? `${name}` : 'default.json';
+        socket.emit('loadConfig', require(`./presets/${file}`));
+    });
 
     socket.on('pilotAction', (data) => {
         console.log(`received : ${data.command} : ${data.value}`);

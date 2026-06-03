@@ -11,6 +11,7 @@
 
     <!-- <link rel="stylesheet" type="text/css" href="/custom/style.css" /> -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="custom/style.css">
     <script src="/custom/Gauges.js"></script>
 
     <script src="/socket.io/socket.io.js"></script>
@@ -23,9 +24,7 @@
 
 
 <body>
-
-
-
+    <div id="interface">
         <canvas id="gauge-airSpeed" width="200" height="200"></canvas>
         <div id="instrument-attitude"></div>
         <div id="instrument-turn_coordinator"></div>
@@ -43,8 +42,10 @@
         <canvas id="thermometer" width="160" height = "160"></canvas>
         <canvas id="suction-gauge" width="160" height = "160"></canvas>
         <canvas id="ammeter" width="160" height = "160"></canvas>
+    </div>
     
-    <button id="save-preset" style="position: fixed; top: 10px; right: 10px; z-index: 3000; padding: 10px 15px; background: #2f2f2f; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">💾 Saving</button>
+    <button id="save-preset" style="position: absolute; top: 10px; right: 10px; z-index: 3000; padding: 10px 15px; background: #2f2f2f; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">💾 Save Preset</button>
+    <select name="preset" style="position: absolute; top: 50px; right: 10px;" id="select_preset"></select>
     
 
 

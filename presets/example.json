@@ -3,103 +3,103 @@
         {
             "type": "instrument-attitude",
             "x": 270,
-            "y": 130,
+            "y": 60,
             "scale": 1.2
         },
         {
             "type": "instrument-heading",
-            "x": 1278,
-            "y": 361,
+            "x": 270,
+            "y": 270,
             "scale": 1.2
         },
         {
             "type": "instrument-vertical",
-            "x": 997,
-            "y": 622,
+            "x": 270,
+            "y": 480,
             "scale": 1.2
         },
         {
             "type": "instrument-altitude",
-            "x": 21,
-            "y": 427,
-            "scale": 1.02
+            "x": 30,
+            "y": 480,
+            "scale": 1.2
         },
         {
             "type": "instrument-turn_coordinator",
-            "x": 236,
-            "y": 492,
-            "scale": 1.3
+            "x": 30,
+            "y": 270,
+            "scale": 1.2
         },
         {
             "type": "gauge-airSpeed",
             "x": 30,
-            "y": 130,
+            "y": 60,
             "scale": 1
         },
         {
             "type": "gauge-engineSpeed",
-            "x": 596,
-            "y": 119,
+            "x": 770,
+            "y": 270,
             "scale": 1
         },
         {
             "type": "gauge-fuel",
-            "x": 752,
-            "y": 571,
+            "x": 50,
+            "y": 660,
             "scale": 0.8
         },
         {
             "type": "gauge-oil",
-            "x": 374,
-            "y": 664,
+            "x": 290,
+            "y": 660,
             "scale": 0.8
         },
         {
             "type": "compass-1",
-            "x": 491,
-            "y": 458,
-            "scale": 1.13
+            "x": 1020,
+            "y": 480,
+            "scale": 1
         },
         {
             "type": "compass-2",
-            "x": 544,
-            "y": 260,
+            "x": 770,
+            "y": 60,
             "scale": 1
         },
         {
             "type": "analog-clock",
-            "x": 765,
-            "y": 116,
-            "scale": 1.07
+            "x": 770,
+            "y": 480,
+            "scale": 1
         },
         {
             "type": "thermometer",
-            "x": 808,
-            "y": 625,
+            "x": 770,
+            "y": 660,
             "scale": 0.8
         },
         {
             "type": "suction-gauge",
-            "x": 831,
-            "y": 392,
+            "x": 920,
+            "y": 660,
             "scale": 0.8
         },
         {
             "type": "ammeter",
-            "x": 1211,
-            "y": 664,
+            "x": 1060,
+            "y": 660,
             "scale": 0.8
         },
         {
             "type": "cdi-1",
-            "x": 1190,
+            "x": 1020,
             "y": 60,
             "scale": 1
         },
         {
             "type": "cdi-2",
-            "x": 1172,
-            "y": 424,
+            "x": 1020,
+            "y": 270,
             "scale": 1
         }
     ]

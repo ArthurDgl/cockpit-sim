@@ -269,6 +269,7 @@ class FlightIndicators {
     createImgBox(imgDirectory, imgSrc) {
         const img = document.createElement('img')
         img.setAttribute('class', 'box')
+        img.draggable=false;
         img.src = `${imgDirectory}/${imgSrc}`
 
         return img

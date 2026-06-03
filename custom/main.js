@@ -1,5 +1,34 @@
 const socket = io();
 
+window.addEventListener('DOMContentLoaded', () => {
+    
+    // Le pop-up s'ouvre dès que la structure de la page est prête
+    // const presetToLoad = prompt("Enter the name of your preset (ex: cessna172) :", "default");
+    
+    // if (presetToLoad) {
+    //     // On envoie le nom saisi au serveur
+    //     socket.emit('loadPreset', presetToLoad);
+    // } else {
+    //     // Sécurité : si l'utilisateur clique sur Annuler ou laisse vide
+    //     socket.emit('loadPreset', 'default');
+    // }
+    socket.emit('loadPreset', 'default');
+    var select = document.getElementById("select_preset");
+    socket.on("files", (files)=>{
+        files.forEach(element => {
+            console.log(element);
+            var option = document.createElement('option');
+            option.text = option.value = element;
+            select.add(option);
+        });
+    });
+    
+    select.addEventListener('change', () => {
+        socket.emit('loadPreset', select.value);
+
+    });
+});
+
 function sendPilotAction(pilotCommand, commandValue) {
     if(pilotCommand === 'THROTTLE') document.getElementById('value-throttle').innerText = commandValue + '%';
     if(pilotCommand === 'TRIM') document.getElementById('value-trim').innerText = commandValue;
@@ -142,6 +171,7 @@ function updateGauges(data) {
 // const CDI1 = new CourseDeviationIndicator('cdi-1');
 // const CDI2 = new CourseDeviationIndicator('cdi-2');
 
+let indicatorAttitude;
 let indicatorHeading;
 let indicatorVerticalSpeed;
 let indicatorAltitude;
@@ -179,85 +209,117 @@ socket.on('planeData', (data) => {
     gaugeEngineSpeed.update({angle: data.engineSpeed*0.07714+225})
 });
 
-socket.on('loadConfig', (data) => {
 
+socket.on('loadConfig', (data) => {
     if (data && data.components) {
         
         data.components.forEach((component) => {
-            console.log(component.type);
             switch (component.type) {
                 
                 case "instrument-attitude":
-                    indicatorAttitude = createFlightIndicator('instrument-attitude', FlightIndicators.TYPE_ATTITUDE);
+                    if(!indicatorAttitude){
+                        indicatorAttitude = createFlightIndicator('instrument-attitude', FlightIndicators.TYPE_ATTITUDE);
+                    }
                     break; 
                     
                 case "instrument-heading":
-                    indicatorHeading = createFlightIndicator('instrument-heading', FlightIndicators.TYPE_HEADING);
+                    if(!indicatorHeading){
+                        indicatorHeading = createFlightIndicator('instrument-heading', FlightIndicators.TYPE_HEADING);
+                    }
                     break;
 
                 case "instrument-vertical":
-                    indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', FlightIndicators.TYPE_VERTICAL_SPEED);
+                    if(!indicatorVerticalSpeed){
+                        indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', FlightIndicators.TYPE_VERTICAL_SPEED);
+                    }
+
                     break;
 
                 case "instrument-altitude": 
-                    elementId = 'instrument-altitude';
-                    indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
+                    if(!indicatorAltitude){
+                        indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
+                    }
                     break;
 
                 case "instrument-turn_coordinator":
-                    indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
-                    break;
+                    if(!indicatorTurnCoordinator){
+                        indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
+                    }
+                break;
                 
                 case "gauge-airSpeed":
-                    gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Kts');
-                    
+                    if(!gaugeAirSpeed){
+                        gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Kts');
+
+                    }                    
                     break;
                 
                 case "gauge-engineSpeed":
-                    gaugeEngineSpeed = new EngineSpeed('gauge-engineSpeed', 'RPM');
+                    if(!gaugeEngineSpeed){
+                        gaugeEngineSpeed = new EngineSpeed('gauge-engineSpeed', 'RPM');
+                    }
                     break;
                 
                 case "gauge-fuel":
-                    gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+                    if(!gaugeFuel){
+                        gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+                    }
                     break;
                 
                 case "gauge-oil":
-                    gaugeOil = new Oil('gauge-oil', 'Oil %');
+                    if(!gaugeOil){
+                        gaugeOil = new Oil('gauge-oil', 'Oil %');
+                    }
                     break;
 
                 case "compass-1":
-                    magneticCompass = new Compass('compass-1', 'Compass');
+                    if(!magneticCompass){
+                        magneticCompass = new Compass('compass-1', 'Compass');
+                    }
                     break;
 
                 case "compass-2":
-                    adfNeedle = new Compass('compass-2', 'ADF');
+                    if(!adfNeedle){
+                        adfNeedle = new Compass('compass-2', 'ADF');
+                    }
                     break;
 
                 case "analog-clock":
-                    analogClock = new AnalogClock('analog-clock');
+                    if(!analogClock){
+                        analogClock = new AnalogClock('analog-clock');
+                    }
                     break;
 
                 case "thermometer":
-                    thermometer = new Thermometer('thermometer');
+                    if(!thermometer){
+                        thermometer = new Thermometer('thermometer');
+                    }
                     break;
 
                 case "suction-gauge":
-                    suctionGauge = new Suction_Gauge('suction-gauge');
+                    if(!suctionGauge){
+                        suctionGauge = new Suction_Gauge('suction-gauge');
+                    }
                     break;
 
                 case "ammeter":
-                    ammeter = new AMmeter('ammeter');
+                    if(!ammeter){
+                        ammeter = new AMmeter('ammeter');
+                    }
                     break;
 
                 case "cdi-1":
-                    CDI1 = new CourseDeviationIndicator('cdi-1');
+                    if(!CDI1){
+                        CDI1 = new CourseDeviationIndicator('cdi-1');
+                    }
                     break;
 
                 case "cdi-2":
+                    if(!CDI2){
                     CDI2 = new CourseDeviationIndicator('cdi-2');
+                    }
                     break;
             }
-            console.log(component.type, "créé")
             const elem = document.getElementById(component.type);
             elem.style.position="absolute";
             elem.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
