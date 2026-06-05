@@ -115,6 +115,7 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
 
     function updateTransform() {
         element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
+
     }
 
     function saveState() {
