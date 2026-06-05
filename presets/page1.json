@@ -44,10 +44,10 @@
         },
         {
             "type": "gauge-engineSpeed",
-            "x": 730,
-            "y": 167,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "gauge-fuel",
@@ -65,59 +65,59 @@
         },
         {
             "type": "compass-1",
-            "x": 978,
-            "y": 384,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "compass-2",
-            "x": 731,
-            "y": -34,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "analog-clock",
-            "x": 727,
-            "y": 377,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "thermometer",
-            "x": 721,
-            "y": 547,
-            "scale": 0.3,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "suction-gauge",
-            "x": 864,
-            "y": 547,
-            "scale": 0.3,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "ammeter",
-            "x": 1013,
-            "y": 552,
-            "scale": 0.3,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "cdi-1",
-            "x": 975,
-            "y": -32,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "cdi-2",
-            "x": 978,
-            "y": 176,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         }
     ]
 }

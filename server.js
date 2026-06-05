@@ -22,6 +22,7 @@ app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
 
+
 let emitOnSocket = (message, data) => {};
 io.on('connection', (socket) => {
     console.log('Client has connected');
@@ -203,34 +204,34 @@ function limit(x, n) {
     return ((x % n) + n) % n;
 }
 
-const port = new SerialPort({
-  path: 'COM3',
-  baudRate: 115200
-});
+// const port = new SerialPort({
+//   path: 'COM3',
+//   baudRate: 115200
+// });
 
-const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+// const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
 const inputOffsets = {};
 
-parser.on('data', (line) => {
-    data = JSON.parse(line);
+// parser.on('data', (line) => {
+//     data = JSON.parse(line);
     
-    if (!data) return;
+//     if (!data) return;
 
-    if (data.action === 'PCFValue') {
-        handlePCFValueMessage(data.address, data.value);
-    }
-    else if (data.action === 'YOKE') {
-        handlePilotAction('YOKE', data, {});
-    }
-    else if (data.action === 'message') {
-        console.log("[ARDUINO] : " + data.message);
-    }
-});
+//     if (data.action === 'PCFValue') {
+//         handlePCFValueMessage(data.address, data.value);
+//     }
+//     else if (data.action === 'YOKE') {
+//         handlePilotAction('YOKE', data, {});
+//     }
+//     else if (data.action === 'message') {
+//         console.log("[ARDUINO] : " + data.message);
+//     }
+// });
 
-port.on('open', () => {
-  console.log('Serial connection opened');
-});
+// port.on('open', () => {
+//   console.log('Serial connection opened');
+// });
 
 const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};

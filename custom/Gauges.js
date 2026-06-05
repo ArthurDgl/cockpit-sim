@@ -21,7 +21,7 @@ class CustomGauge {
 
         this.spokeLength = 0.12 * this.radius;
         this.outerLineWidth = this.radius * 0.1;
-        this.textSize = this.radius * 0.15;
+        this.textSize = this.radius * 0.18;
         this.innerDialRadius = this.radius - this.outerLineWidth/2 - this.spokeLength - this.textSize * 1.3;
 
         this.startAngle = startAngle;

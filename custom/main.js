@@ -1,5 +1,33 @@
 const socket = io();
 
+window.addEventListener('DOMContentLoaded', () => {
+    
+    // Le pop-up s'ouvre dès que la structure de la page est prête
+    // const presetToLoad = prompt("Enter the name of your preset (ex: cessna172) :", "default");
+    
+    // if (presetToLoad) {
+    //     // On envoie le nom saisi au serveur
+    //     socket.emit('loadPreset', presetToLoad);
+    // } else {
+    //     // Sécurité : si l'utilisateur clique sur Annuler ou laisse vide
+    //     socket.emit('loadPreset', 'default');
+    // }
+    socket.emit('loadPreset', 'default');
+    var select = document.getElementById("select_preset");
+    socket.on("files", (files)=>{
+        files.forEach(element => {
+            var option = document.createElement('option');
+            option.text = option.value = element;
+            select.add(option);
+        });
+    });
+    
+    select.addEventListener('change', () => {
+        socket.emit('loadPreset', select.value);
+
+    });
+});
+
 function sendPilotAction(pilotCommand, commandValue) {
     if(pilotCommand === 'THROTTLE') document.getElementById('value-throttle').innerText = commandValue + '%';
     if(pilotCommand === 'TRIM') document.getElementById('value-trim').innerText = commandValue;
@@ -23,113 +51,109 @@ function createFlightIndicator(elementId, type, options = {}) {
     return result;
 }
 
-// --- FONCTION POUR RENDRE LES JAUGES DÉPLAÇABLES, ZOOMABLES ET PERMANENTES ---
+// --- FONCTION POUR RENDRE LES JAUGES DÉPLAÇABLES ET ZOOMABLES ---
+function makeDraggableAndZoomable(element, startX, startY, startScale) {
+    const id = element.id; 
+    let isDragging = false;
+    let initialX, initialY;
 
-// function makeDraggableAndZoomable(element) {
-//     const id = element.className; // Identifiant unique (ex: 'box1')
-//     let isDragging = false;
-//     let initialX, initialY;
+    let xOffset = startX || 0;
+    let yOffset = startY || 0;
+    let currentScale = startScale || 1.0;
+    let displayed = true;
 
-//     // 💾 Récupère la position ET le zoom sauvegardés (ou valeurs par défaut)
-//     // const savedData = JSON.parse(localStorage.getItem(`gauge_data_${id}`)) || { x: 0, y: 0, scale: 1.0 };
-//     // let xOffset = savedData.x;
-//     // let yOffset = savedData.y;
-//     // let currentScale = savedData.scale;
+    element.style.cursor = 'grab';
 
-//     let xOffset = 0;
-//     let yOffset = 0;
-//     let currentScale = 1;
+    // --- ÉCOUTEURS ---
+    element.addEventListener("mousedown", dragStart);
+    document.addEventListener("mouseup", dragEnd);
+    document.addEventListener("mousemove", drag);
+    element.addEventListener("wheel", handleWheel, { passive: false });
+    element.addEventListener("mouseover", (e) => {
+        console.log("mouse entered");
+        element.addEventListener("keydown", hideComponent);
+    });
+    element.addEventListener("mouseout", (e) =>{
+        console.log("mouse left");
+        element.removeEventListener("keydown", hideComponent);
+    });
 
-//     // Applique la position et le zoom au chargement de la page
-//     element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
-//     element.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
-//     element.style.cursor = 'grab';
+    function dragStart(e) {
+        if (e.button === 0) { // Clic gauche
+            initialX = e.clientX - xOffset;
+            initialY = e.clientY - yOffset;
+            isDragging = true;
+            element.style.cursor = 'grabbing';
+            element.style.zIndex = 1000;
+        }
+    }
 
-//     // --- ÉCOUTEURS POUR LE DÉPLACEMENT (DRAG) ---
-//     element.addEventListener("mousedown", dragStart);
-//     document.addEventListener("mouseup", dragEnd);
-//     document.addEventListener("mousemove", drag);
+    function dragEnd(e) {
+        if (isDragging) {
+            initialX = xOffset;
+            initialY = yOffset;
+            isDragging = false;
+            element.style.cursor = 'grab';
+            element.style.zIndex = '';
+            saveState(); // Sauvegarde automatique vers le serveur
+        }
+    }
 
-//     // --- ÉCOUTEUR POUR LE ZOOM (MOLETTE) ---
-//     element.addEventListener("wheel", handleWheel, { passive: false });
+    function drag(e) {
+        if (isDragging) {
+            e.preventDefault();
+            xOffset = e.clientX - initialX;
+            yOffset = e.clientY - initialY;
+            updateTransform();
+        }
+        
+    }
 
-//     function dragStart(e) {
-//         if (e.button === 0) { // Clic gauche
-//             initialX = e.clientX - xOffset;
-//             initialY = e.clientY - yOffset;
-//             isDragging = true;
-//             element.style.cursor = 'grabbing';
-//             element.style.zIndex = 1000;
-//         }
-//     }
+    function handleWheel(e) {
+        e.preventDefault(); 
+        const zoomFactor = 0.025; 
+        if (e.deltaY < 0) {
+            currentScale += zoomFactor;
+        } else {
+            currentScale -= zoomFactor;
+        }
+        currentScale = Math.max(0.3, Math.min(currentScale, 3.0));
+        updateTransform();
+        saveState(); 
+    }
 
-//     function dragEnd(e) {
-//         if (isDragging) {
-//             initialX = xOffset;
-//             initialY = yOffset;
-//             isDragging = false;
-//             element.style.cursor = 'grab';
-//             element.style.zIndex = '';
-//             saveState(); // Sauvegarde après déplacement
-//         }
-//     }
+    function hideComponent(e){
+        console.log(e.key);
+        if (e.key == "d"){
+            console.log("hidden")
+            displayed=false;
+            updateTransform();
+            saveState();
+        }
 
-//     function drag(e) {
-//         if (isDragging) {
-//             e.preventDefault();
-//             xOffset = e.clientX - initialX;
-//             yOffset = e.clientY - initialY;
-//             updateTransform();
-//         }
-//     }
+    }
 
-//     function handleWheel(e) {
-//         e.preventDefault(); // Empêche la page entière de scroller
+    function updateTransform() {
+        element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
+        if(displayed == false){
+            element.style.display = 'none';
+        }
 
-//         // Sens de la molette : e.deltaY < 0 signifie qu'on roule vers le haut (zoom avant)
-//         const zoomFactor = 0.05; // Ajuste cette valeur pour rendre le zoom plus ou moins rapide
-//         if (e.deltaY < 0) {
-//             currentScale += zoomFactor;
-//         } else {
-//             currentScale -= zoomFactor;
-//         }
+    }
 
-//         // Limites de zoom pour éviter que la jauge devienne minuscule ou géante
-//         currentScale = Math.max(0.3, Math.min(currentScale, 3.0));
+    function saveState() {
+        socket.emit('saveGaugeConfig', {
+            type: id,
+            x: xOffset,
+            y: yOffset,
+            scale: currentScale,
+            visible: displayed
+        });
+    }
 
-//         updateTransform();
-//         saveState(); // Sauvegarde après zoom
-//     }
-
-//     // Applique les modifications CSS combinées (important de mettre les deux ensemble)
-//     function updateTransform() {
-//         element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
-//     }
-
-//     // Fonction unique pour sauvegarder la position ET le zoom
-//     function saveState() {
-
-//     //     localStorage.setItem(`gauge_data_${id}`, JSON.stringify({
-//     //         x: xOffset,
-//     //         y: yOffset,
-//     //         scale: currentScale
-//     //     }));
-//     // }
-//         const fileData = fs.readFile(fileName, "utf8");
-//         const jsonData = JSON.parse(fileData);
-
-//         jsonData["x"] = xOffset;
-//         jsonData["y"] = yOffset;
-//         jsonData["scale"] = currentScale;
-    
-//     }
-// }
-
-// Sélectionne et applique à toutes les boîtes (box1, box2, etc.)
-// const allBoxes = document.querySelectorAll('div[class^="box"]');
-// allBoxes.forEach(box => {
-//     makeDraggableAndZoomable(box);
-// });
+    // Applique la position de départ immédiatement
+    updateTransform();
+}
 
 function updateIndicators(data) {
     indicatorAttitude?.updateRoll(data.roll);
@@ -172,6 +196,7 @@ function updateGauges(data) {
 // const CDI1 = new CourseDeviationIndicator('cdi-1');
 // const CDI2 = new CourseDeviationIndicator('cdi-2');
 
+let indicatorAttitude;
 let indicatorHeading;
 let indicatorVerticalSpeed;
 let indicatorAltitude;
@@ -194,7 +219,7 @@ socket.on('planeData', (data) => {
     updateIndicators(data);
 
     updateGauges(data);
-
+    
     magneticCompass.update({angle: data.heading});
     adfNeedle.update({angle: data.adfHeading});
     analogClock.update({time: data.time});
@@ -209,94 +234,180 @@ socket.on('planeData', (data) => {
     gaugeEngineSpeed.update({angle: data.engineSpeed*0.07714+225})
 });
 
-socket.on('loadConfig', (data) => {
 
+socket.on('loadConfig', (data) => {
     if (data && data.components) {
         
         data.components.forEach((component) => {
-            console.log(component.type);
             switch (component.type) {
                 
                 case "instrument-attitude":
-                    indicatorAttitude = createFlightIndicator('instrument-attitude', FlightIndicators.TYPE_ATTITUDE);
+                    if(!indicatorAttitude){
+                        indicatorAttitude = createFlightIndicator('instrument-attitude', FlightIndicators.TYPE_ATTITUDE);
+                    }
                     break; 
                     
                 case "instrument-heading":
-                    indicatorHeading = createFlightIndicator('instrument-heading', FlightIndicators.TYPE_HEADING);
+                    if(!indicatorHeading){
+                        indicatorHeading = createFlightIndicator('instrument-heading', FlightIndicators.TYPE_HEADING);
+                    }
                     break;
 
                 case "instrument-vertical":
-                    indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', FlightIndicators.TYPE_VERTICAL_SPEED);
+                    if(!indicatorVerticalSpeed){
+                        indicatorVerticalSpeed = createFlightIndicator('instrument-vertical', FlightIndicators.TYPE_VERTICAL_SPEED);
+                    }
+
                     break;
 
                 case "instrument-altitude": 
-                    elementId = 'instrument-altitude';
-                    indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
+                    if(!indicatorAltitude){
+                        indicatorAltitude = createFlightIndicator('instrument-altitude', FlightIndicators.TYPE_ALTIMETER);
+                    }
                     break;
 
                 case "instrument-turn_coordinator":
-                    indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
-                    break;
+                    if(!indicatorTurnCoordinator){
+                        indicatorTurnCoordinator = createFlightIndicator('instrument-turn_coordinator', FlightIndicators.TYPE_TURN_COORDINATOR);
+                    }
+                break;
                 
                 case "gauge-airSpeed":
-                    gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Kts');
-                    
+                    if(!gaugeAirSpeed){
+                        gaugeAirSpeed = new AirSpeed('gauge-airSpeed', 'Kts');
+
+                    }                    
                     break;
                 
                 case "gauge-engineSpeed":
-                    gaugeEngineSpeed = new EngineSpeed('gauge-engineSpeed', 'RPM');
+                    if(!gaugeEngineSpeed){
+                        gaugeEngineSpeed = new EngineSpeed('gauge-engineSpeed', 'RPM');
+                    }
                     break;
                 
                 case "gauge-fuel":
-                    gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+                    if(!gaugeFuel){
+                        gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+                    }
                     break;
                 
                 case "gauge-oil":
-                    gaugeOil = new Oil('gauge-oil', 'Oil %');
+                    if(!gaugeOil){
+                        gaugeOil = new Oil('gauge-oil', 'Oil %');
+                    }
                     break;
 
                 case "compass-1":
-                    magneticCompass = new Compass('compass-1', 'Compass');
+                    if(!magneticCompass){
+                        magneticCompass = new Compass('compass-1', 'Compass');
+                    }
                     break;
 
                 case "compass-2":
-                    adfNeedle = new Compass('compass-2', 'ADF');
+                    if(!adfNeedle){
+                        adfNeedle = new Compass('compass-2', 'ADF');
+                    }
                     break;
 
                 case "analog-clock":
-                    analogClock = new AnalogClock('analog-clock');
+                    if(!analogClock){
+                        analogClock = new AnalogClock('analog-clock');
+                    }
                     break;
 
                 case "thermometer":
-                    thermometer = new Thermometer('thermometer');
+                    if(!thermometer){
+                        thermometer = new Thermometer('thermometer');
+                    }
                     break;
 
                 case "suction-gauge":
-                    suctionGauge = new Suction_Gauge('suction-gauge');
+                    if(!suctionGauge){
+                        suctionGauge = new Suction_Gauge('suction-gauge');
+                    }
                     break;
 
                 case "ammeter":
-                    ammeter = new AMmeter('ammeter');
+                    if(!ammeter){
+                        ammeter = new AMmeter('ammeter');
+                    }
                     break;
 
                 case "cdi-1":
-                    CDI1 = new CourseDeviationIndicator('cdi-1');
+                    if(!CDI1){
+                        CDI1 = new CourseDeviationIndicator('cdi-1');
+                    }
                     break;
 
                 case "cdi-2":
+                    if(!CDI2){
                     CDI2 = new CourseDeviationIndicator('cdi-2');
+                    }
                     break;
             }
-            console.log(component.type, "créé")
             const elem = document.getElementById(component.type);
+            elem.style.display = "grid";
             elem.style.position="absolute";
             elem.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
             elem.style.transform = `translate3d(${component.x}px, ${component.y}px, 0) scale(${component.scale})`;
+            if(component.visible==false){
+                elem.style.display  = 'none';
+            }
+            makeDraggableAndZoomable(elem, component.x, component.y, component.scale);
         });
     }
 
-    // boucle sur data.components
-    // --- creer l'indicateur en utilisant le type du composant
+});
+
+document.getElementById('save-preset').addEventListener('click', () => {
+
+    const presetName = prompt("Enter the name of your preset (ex: cessna172) :", "example");
+    if (!presetName) return;
+    const components = [];
+    
+    const gaugeIds = [
+        'instrument-attitude', 'instrument-heading', 'instrument-vertical', 
+        'instrument-altitude', 'instrument-turn_coordinator', 'gauge-airSpeed', 
+        'gauge-engineSpeed', 'gauge-fuel', 'gauge-oil', 'compass-1', 
+        'compass-2', 'analog-clock', 'thermometer', 'suction-gauge', 'ammeter', 'cdi-1', 'cdi-2'
+    ];
+
+    gaugeIds.forEach(id => {
+        const elem = document.getElementById(id);
+        if (elem) {
+            // On extrait les valeurs du transform ou on utilise des valeurs par défaut si non déplacé
+            // Pour faire propre, on peut stocker temporairement x, y, et scale sur l'élément lors du drag
+            const transformMatrix = window.getComputedStyle(elem).transform;
+            console.log(transformMatrix);
+            let x = 0, y = 0, scale = 1.0, visible = true;
+
+            if (transformMatrix && transformMatrix !== 'none') {
+                const values = transformMatrix.split('(')[1].split(')')[0].split(',');
+                x = Math.round(parseFloat(values[4])) || 0;
+                y = Math.round(parseFloat(values[5])) || 0;
+                scale = parseFloat(values[0]) || 1.0;
+            }
+            else{
+                visible = false;
+            }
+
+            components.push({
+                type: id,
+                x: x,
+                y: y,
+                scale: parseFloat(scale.toFixed(2)),
+                visible: visible
+            });
+        }
+    });
+
+    // send complete data with socket.io to server.js
+    socket.emit('createNewPreset', {
+        name: presetName,
+        components: components
+    });
+    
+    alert(`Requête de sauvegarde envoyée pour : ${presetName}.json`);
 });
 
 // socket.on('physicalAction', (data) => {
