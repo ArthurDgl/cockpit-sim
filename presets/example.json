@@ -2,9 +2,9 @@
     "components": [
         {
             "type": "instrument-attitude",
-            "x": 270,
-            "y": 60,
-            "scale": 1.2
+            "x": 0,
+            "y": 0,
+            "scale": 1
         },
         {
             "type": "instrument-heading",
@@ -32,9 +32,9 @@
         },
         {
             "type": "gauge-airSpeed",
-            "x": -59,
-            "y": -36,
-            "scale": 0.5
+            "x": 0,
+            "y": 0,
+            "scale": 1
         },
         {
             "type": "gauge-engineSpeed",
@@ -62,9 +62,9 @@
         },
         {
             "type": "compass-2",
-            "x": 731,
-            "y": -34,
-            "scale": 0.5
+            "x": 0,
+            "y": 0,
+            "scale": 1
         },
         {
             "type": "analog-clock",

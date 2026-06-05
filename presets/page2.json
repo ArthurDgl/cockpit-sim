@@ -2,45 +2,45 @@
     "components": [
         {
             "type": "instrument-attitude",
-            "x": 270,
-            "y": 60,
-            "scale": 1.2,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "instrument-heading",
-            "x": 270,
-            "y": 270,
-            "scale": 1.2,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "instrument-vertical",
-            "x": 267,
-            "y": 486,
-            "scale": 1.2,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "instrument-altitude",
-            "x": 39,
-            "y": 484,
-            "scale": 1.2,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "instrument-turn_coordinator",
-            "x": 40,
-            "y": 278,
-            "scale": 1.2,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "gauge-airSpeed",
-            "x": -59,
-            "y": -36,
-            "scale": 0.5,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "gauge-engineSpeed",
@@ -51,17 +51,17 @@
         },
         {
             "type": "gauge-fuel",
-            "x": -16,
-            "y": 554,
-            "scale": 0.33,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "gauge-oil",
-            "x": 133,
-            "y": 551,
-            "scale": 0.33,
-            "visible": true
+            "x": 0,
+            "y": 0,
+            "scale": 1,
+            "visible": false
         },
         {
             "type": "compass-1",

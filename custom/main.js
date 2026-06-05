@@ -16,7 +16,6 @@ window.addEventListener('DOMContentLoaded', () => {
     var select = document.getElementById("select_preset");
     socket.on("files", (files)=>{
         files.forEach(element => {
-            console.log(element);
             var option = document.createElement('option');
             option.text = option.value = element;
             select.add(option);
@@ -61,6 +60,7 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
     let xOffset = startX || 0;
     let yOffset = startY || 0;
     let currentScale = startScale || 1.0;
+    let displayed = true;
 
     element.style.cursor = 'grab';
 
@@ -69,6 +69,14 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
     document.addEventListener("mouseup", dragEnd);
     document.addEventListener("mousemove", drag);
     element.addEventListener("wheel", handleWheel, { passive: false });
+    element.addEventListener("mouseover", (e) => {
+        console.log("mouse entered");
+        element.addEventListener("keydown", hideComponent);
+    });
+    element.addEventListener("mouseout", (e) =>{
+        console.log("mouse left");
+        element.removeEventListener("keydown", hideComponent);
+    });
 
     function dragStart(e) {
         if (e.button === 0) { // Clic gauche
@@ -98,6 +106,7 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
             yOffset = e.clientY - initialY;
             updateTransform();
         }
+        
     }
 
     function handleWheel(e) {
@@ -113,8 +122,22 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
         saveState(); 
     }
 
+    function hideComponent(e){
+        console.log(e.key);
+        if (e.key == "d"){
+            console.log("hidden")
+            displayed=false;
+            updateTransform();
+            saveState();
+        }
+
+    }
+
     function updateTransform() {
         element.style.transform = `translate3d(${xOffset}px, ${yOffset}px, 0) scale(${currentScale})`;
+        if(displayed == false){
+            element.style.display = 'none';
+        }
 
     }
 
@@ -123,7 +146,8 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
             type: id,
             x: xOffset,
             y: yOffset,
-            scale: currentScale
+            scale: currentScale,
+            visible: displayed
         });
     }
 
@@ -195,7 +219,7 @@ socket.on('planeData', (data) => {
     updateIndicators(data);
 
     updateGauges(data);
-
+    
     magneticCompass.update({angle: data.heading});
     adfNeedle.update({angle: data.adfHeading});
     analogClock.update({time: data.time});
@@ -322,9 +346,13 @@ socket.on('loadConfig', (data) => {
                     break;
             }
             const elem = document.getElementById(component.type);
+            elem.style.display = "grid";
             elem.style.position="absolute";
             elem.style.transformOrigin = "center center"; // Le zoom se fait par le milieu de la jauge
             elem.style.transform = `translate3d(${component.x}px, ${component.y}px, 0) scale(${component.scale})`;
+            if(component.visible==false){
+                elem.style.display  = 'none';
+            }
             makeDraggableAndZoomable(elem, component.x, component.y, component.scale);
         });
     }
@@ -350,7 +378,8 @@ document.getElementById('save-preset').addEventListener('click', () => {
             // On extrait les valeurs du transform ou on utilise des valeurs par défaut si non déplacé
             // Pour faire propre, on peut stocker temporairement x, y, et scale sur l'élément lors du drag
             const transformMatrix = window.getComputedStyle(elem).transform;
-            let x = 0, y = 0, scale = 1.0;
+            console.log(transformMatrix);
+            let x = 0, y = 0, scale = 1.0, visible = true;
 
             if (transformMatrix && transformMatrix !== 'none') {
                 const values = transformMatrix.split('(')[1].split(')')[0].split(',');
@@ -358,12 +387,16 @@ document.getElementById('save-preset').addEventListener('click', () => {
                 y = Math.round(parseFloat(values[5])) || 0;
                 scale = parseFloat(values[0]) || 1.0;
             }
+            else{
+                visible = false;
+            }
 
             components.push({
                 type: id,
                 x: x,
                 y: y,
-                scale: parseFloat(scale.toFixed(2))
+                scale: parseFloat(scale.toFixed(2)),
+                visible: visible
             });
         }
     });
