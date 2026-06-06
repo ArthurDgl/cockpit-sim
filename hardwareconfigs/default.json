@@ -35,5 +35,34 @@
                 }
             ]
         }
+    ],
+    "AnalogPins" : [
+        {
+            "type": "varres",
+            "min": 0,
+            "max": 1,
+            "key": "throttle"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        }
     ]
 }
