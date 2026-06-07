@@ -116,6 +116,12 @@ const int ROLL_MIN = 279;
 const int PITCH_MAX = 607;
 const int PITCH_MIN = 380;
 
+const int PDL_LEFT_MAX = 581;
+const int PDL_LEFT_MIN = 0;
+
+const int PDL_RIGHT_MAX = 1022;
+const int PDL_RIGHT_MIN = 560;
+
 void setupDigitalPins() {
   for (int i = 0; i < PIN_COUNT; i++) {
     pinMode(pins[i], INPUT_PULLUP);
@@ -189,6 +195,7 @@ void loop() {
   if (millis() - lastBlink > 50) {
     lastBlink = millis();
     processYoke();
+    processPedals();
     testPinChanges();
     display();
   }
@@ -229,5 +236,43 @@ void processYoke() {
 
     last_roll = roll;
     last_pitch = pitch;
+  }
+}
+
+float avg_pdl_left = 0.0;
+float avg_pdl_right = 0.0;
+
+float last_pdl_left = 0.0;
+float last_pdl_right = 0.0;
+
+void processPedals() {
+  int val_pdl_left = analogRead(A3);
+  int val_pdl_right = analogRead(A2);
+
+  float pdl_left = ((float) (val_pdl_left - PDL_LEFT_MIN)) / (float) (PDL_LEFT_MAX - PDL_LEFT_MIN);
+  float pdl_right = ((float) (val_pdl_right - PDL_RIGHT_MIN)) / (float) (PDL_RIGHT_MAX - PDL_RIGHT_MIN);
+
+  pdl_left = pdl_left - 0.00;
+  pdl_right = pdl_right - 0.00;
+
+  avg_pdl_left = (AVG_RATIO * avg_pdl_left + pdl_left) / (AVG_RATIO + 1.0);
+  avg_pdl_right = (AVG_RATIO * avg_pdl_right + pdl_right) / (AVG_RATIO + 1.0);
+
+  pdl_left = avg_pdl_left;
+  pdl_right = avg_pdl_right;
+
+  if (abs(pdl_left) <= 0.05) pdl_left = 0.0;
+  if (abs(pdl_right) <= 0.05) pdl_right = 0.0;
+
+  if (abs(last_pdl_left - pdl_left) >= 0.01 || abs(last_pdl_right - pdl_right) >= 0.01) {
+    Serial.print("{\"action\":\"PEDALS\", \"pdl_left\":");
+    Serial.print(pdl_left);
+    
+    Serial.print(",\"pdl_right\":");
+    Serial.print(pdl_right);
+    Serial.println("}");
+
+    last_pdl_left = pdl_left;
+    last_pdl_right = pdl_right;
   }
 }
