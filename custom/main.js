@@ -70,11 +70,9 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
     document.addEventListener("mousemove", drag);
     element.addEventListener("wheel", handleWheel, { passive: false });
     element.addEventListener("mouseover", (e) => {
-        console.log("mouse entered");
         element.addEventListener("keydown", hideComponent);
     });
     element.addEventListener("mouseout", (e) =>{
-        console.log("mouse left");
         element.removeEventListener("keydown", hideComponent);
     });
 
@@ -125,7 +123,6 @@ function makeDraggableAndZoomable(element, startX, startY, startScale) {
     function hideComponent(e){
         console.log(e.key);
         if (e.key == "d"){
-            console.log("hidden")
             displayed=false;
             updateTransform();
             saveState();

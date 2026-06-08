@@ -1,7 +1,7 @@
 // server.js
 
-const USE_SIM = false;
-const CONTROL_SIM = false;
+const USE_SIM = true;
+const USE_ARDUINO = true;
 
 const express = require('express');
 const http = require('http');
@@ -16,6 +16,7 @@ const { ReadlineParser } = require('@serialport/parser-readline');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+// const io = (server, { wsEngine: 'ws' });
 
 const simConnect = require('node-simconnect');
 const SimConnectDataType = simConnect.SimConnectDataType;
@@ -31,9 +32,14 @@ let handlePilotAction = ((command, value, data) => {return;});
 
 
 let emitOnSocket = (message, data) => {};
+let emitOnIo = (message, data) => {};
+
+let users = {};
+
 io.on('connection', (socket) => {
-    console.log('Client has connected');
-    
+    console.log(`Client has connected: ${socket.id}`);
+    socket.join('users');
+
     const files = fs.readdirSync('./presets');
         socket.emit("files", files);
     
@@ -71,9 +77,15 @@ io.on('connection', (socket) => {
     emitOnSocket = (message, data) => {
         socket.emit(message, data);
     };
+
+    emitOnIo = (message, data) => {
+        // socket.broadcast.to('users').volatile.emit(message, data);
+        // socket.volatile.emit(message, data);
+        io.emit(message, data);
+    };
     
     socket.on('disconnect', () => {
-        console.log('Client disconnected');
+        console.log(`Client has disconnected: ${socket.id}`);
     });
 });
 
@@ -101,16 +113,17 @@ function preparePlaneData(simData) {
 }
 
 let lastSendTime = Date.now();
-const minElapsedTime = 10;
+const minElapsedTime = 30;
 function trySendingSimData(simData) {
     const now = Date.now();
     const elapsed = now - lastSendTime;
-    lastSendTime = now;
+    // lastSendTime = now;
 
     if (elapsed < minElapsedTime) return;
+    lastSendTime = now;
 
     const data = preparePlaneData(simData);
-    emitOnSocket('planeData', data);
+    emitOnIo('planeData', data);
 }
 
 let simData = {};
@@ -142,7 +155,6 @@ if (USE_SIM) {
 
         handle.subscribeToSystemEvent(EVENT_ID_PAUSE, 'Pause');
 
-        handle.addToDataDefinition(DEFINITION_1, 'Kohlsman setting hg', 'inHg', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'Indicated Altitude', 'feet', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'Plane Latitude', 'degrees', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'Plane Longitude', 'degrees', SimConnectDataType.FLOAT64);
@@ -176,7 +188,6 @@ if (USE_SIM) {
                 case REQUEST_1: {
                     const receivedData = {
                         // Read order is important!
-                        kohlsmann: recvSimObjectData.data.readFloat64(),
                         altitude: recvSimObjectData.data.readFloat64(),
                         latitude: recvSimObjectData.data.readFloat64(),
                         longitude: recvSimObjectData.data.readFloat64(),
@@ -239,7 +250,7 @@ if (USE_SIM) {
 function limit(x, n) {
     return ((x % n) + n) % n;
 }
-if(CONTROL_SIM){
+if(USE_ARDUINO){
 
     const port = new SerialPort({
     path: 'COM3',
