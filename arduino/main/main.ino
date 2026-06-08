@@ -54,6 +54,7 @@ void loop() {
   }
 
   if (millis() - last_blink > 50) {
+    last_blink = millis();
     processYoke();
   }
 }

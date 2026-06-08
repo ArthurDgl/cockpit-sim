@@ -1,5 +1,10 @@
 #include <Wire.h>
-#define PCF_1 0x20  
+#define PCF_1 0x20
+
+const int selectPins[4] = {9, 10, 11, 12};
+
+const uint8_t muxPins[] = {A3};
+#define MUX_n 1
 
 volatile bool pcfInterrupt = false;
 uint8_t usedAddresses = 0;
@@ -47,10 +52,63 @@ void setup() {
 
   pinMode(3, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(3), handlePCFInterrupt, FALLING);
+
+  for (int i = 0; i < 4; i++) {
+    pinMode(selectPins[i], OUTPUT);
+  }
+
+  for (int i = 0; i < MUX_n; i++) {
+    pinMode(muxPins[i], INPUT);
+  }
 }
 
 void handlePCFInterrupt() {
     pcfInterrupt = true;
+}
+
+unsigned long last_blink = 0;
+
+void loop() {
+  if (pcfInterrupt) {
+    pcfInterrupt = false;
+
+    for (int i = 0; i < 8; i++) {
+      if (!((usedAddresses >> i) & 0b00000001)) continue;
+      readI2C(convertIntToAddress(i));
+    }
+  }
+
+  if (millis() - last_blink > 50) {
+    last_blink = millis();
+    
+    readMux(0);
+  }
+}
+
+void readMux(int mux_offset) {
+  Serial.print("{\"action\":\"MUXValues\",\"id\":");
+  Serial.print(mux_offset);
+  Serial.print(",\"values\":[");
+  for (int i = 0; i < 16; i++) {
+    Serial.print(readMuxValue(mux_offset, i));
+    if (i < 15) Serial.print(",");
+  }
+  Serial.println("]}");
+}
+
+int readMuxValue(int mux_offset, int address) {
+  setSelectAddress(address);
+  delayMicroseconds(1);
+  analogRead(muxPins[mux_offset]);
+  int value = analogRead(muxPins[mux_offset]);
+  return value;
+}
+
+void setSelectAddress(int address) {
+  for (int i = 0; i < 4; i++) {
+    int bit = (address >> i) & 1;
+    digitalWrite(selectPins[i], bit);
+  }
 }
 
 void readI2C(int address) {
@@ -63,17 +121,6 @@ void readI2C(int address) {
     printPCFValue(address, I2CResponse);
   } else {
     printMessage("Failed to get value");
-  }
-}
-
-void loop() {
-  if (pcfInterrupt) {
-    pcfInterrupt = false;
-
-    for (int i = 0; i < 8; i++) {
-      if (!((usedAddresses >> i) & 0b00000001)) continue;
-      readI2C(convertIntToAddress(i));
-    }
   }
 }
   
