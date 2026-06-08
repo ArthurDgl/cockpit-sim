@@ -10,7 +10,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-//here you can choose the preset you want to load by replacing ./presets/... with the name of the preset
 const configFile = require("./presets/default.json");
 
 app.use(express.static(__dirname));
@@ -52,7 +51,7 @@ io.on('connection', (socket) => {
         }
     })
 
-
+    //Choosing the data, here it is randomly
     const randomBetween = (min, max) => Math.floor(Math.random() * (max - min + 1) + min);
 
     let time = 8 * 3600; // 8 am in seconds
@@ -83,6 +82,8 @@ io.on('connection', (socket) => {
         };
         socket.emit('planeData', data);
     }, 100);
+
+    //
     
     socket.on('disconnect', () => {
         console.log('Client disconnected');

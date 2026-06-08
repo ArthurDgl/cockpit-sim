@@ -1,10 +1,14 @@
 // server.js
 
 const USE_SIM = false;
+const CONTROL_SIM = false;
 
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
+
+const fs = require('fs');
+const path = require('path');
 
 const { SerialPort } = require('serialport');
 const { ReadlineParser } = require('@serialport/parser-readline');
@@ -18,6 +22,9 @@ const SimConnectDataType = simConnect.SimConnectDataType;
 const SimConnectConstants = simConnect.SimConnectConstants;
 const SimConnectPeriod = simConnect.SimConnectPeriod;
 
+const configFile = require("./presets/default.json");
+
+
 app.use(express.static(__dirname));
 
 let handlePilotAction = ((command, value, data) => {return;});
@@ -26,11 +33,40 @@ let handlePilotAction = ((command, value, data) => {return;});
 let emitOnSocket = (message, data) => {};
 io.on('connection', (socket) => {
     console.log('Client has connected');
-    socket.emit('loadConfig', configjson);
+    
+    const files = fs.readdirSync('./presets');
+        socket.emit("files", files);
+    
+        socket.on('loadPreset', (name) => {
+            const file = fs.existsSync(path.join(__dirname, 'presets', `${name}`)) ? `${name}` : 'default.json';
+            socket.emit('loadConfig', require(`./presets/${file}`));
+        });
+    
+    // socket.emit('loadConfig', configjson);
 
     socket.on('pilotAction', (data) => {
         handlePilotAction(data.command, data.value, data);
     });
+
+    socket.on('createNewPreset', (data) => {
+            try {
+                // path to the presets folder
+                const folderPath = path.join(__dirname, 'presets');
+                const filePath = path.join(folderPath, `${data.name}.json`);
+    
+                // checking if the file doesn't exist, if he doesn't we create it 
+                if (!fs.existsSync(folderPath)){
+                    fs.mkdirSync(folderPath, { recursive: true });
+                }
+                // writting everything into the json file
+                fs.writeFileSync(filePath, JSON.stringify({ components: data.components }, null, 4), 'utf-8');
+    
+                console.log(`New preset created : presets/${data.name}.json`);
+    
+            } catch (error) {
+                console.error(" Error happened when trying to create the JSON file:", error);
+            }
+        })
 
     emitOnSocket = (message, data) => {
         socket.emit(message, data);
@@ -203,91 +239,94 @@ if (USE_SIM) {
 function limit(x, n) {
     return ((x % n) + n) % n;
 }
+if(CONTROL_SIM){
 
-const port = new SerialPort({
-  path: 'COM3',
-  baudRate: 115200
-});
+    const port = new SerialPort({
+    path: 'COM3',
+    baudRate: 115200
+    });
 
-const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+    const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
-const inputOffsets = {};
+    const inputOffsets = {};
 
-parser.on('data', (line) => {
-    data = JSON.parse(line);
+    parser.on('data', (line) => {
+        data = JSON.parse(line);
+        
+        if (!data) return;
+
+        if (data.action === 'PCFValue') {
+            handlePCFValueMessage(data.address, data.value);
+        }
+        else if (data.action === 'YOKE') {
+            handlePilotAction('YOKE', data, {});
+        }
+        else if (data.action === 'message') {
+            console.log("[ARDUINO] : " + data.message);
+        }
+    });
+
+    port.on('open', () => {
+    console.log('Serial connection opened');
+    });
+
+    const hardwareConfig = require('./hardwareconfigs/default.json');
+    const rotaryEncoderValues = {};
+    hardwareConfig.PCFs.forEach(pcf => {
+        pcf.pins.forEach(pin => {
+            switch(pin.type) {
+                case "ROT":
+                    rotaryEncoderValues[pin.key] = {};
+                    rotaryEncoderValues[pin.key][pin.signal] = 1;
+                    rotaryEncoderValues[pin.key].rawCount = 0;
+                    rotaryEncoderValues[pin.key].trueCount = 0;
+                    rotaryEncoderValues[pin.key].moddedCount = 0;
+                    break;
+                case "empty":
+                    break;
+                default:
+                    console.log('[WARNING] : Unrecognized configuration');
+                    break;
+            }
+        });
+    });
+
+    function handlePCFValueMessage(address, value) {
+        const config = hardwareConfig.PCFs.find(config => config.address == address);
+        let binString = ('' + value).split('').reverse().join('');
+        const rotaryEncodersToUpdate = [];
+        config.pins.forEach((pin, i) => {
+            switch(pin.type) {
+                case "ROT":
+                    let oldA;
+                    if (pin.signal === 'A') {
+                        oldA = rotaryEncoderValues[pin.key].A;
+                    }
+                    const newValue = parseInt(binString[i]);
+                    rotaryEncoderValues[pin.key][pin.signal] = newValue;
+                    if (pin.signal === 'A') {
+                        const changeA = Math.abs(oldA - newValue);
+                        if (changeA == 1) {
+                            rotaryEncodersToUpdate.push(pin.key);
+                        } 
+                    }
+                    break;
+                case "empty":
+                default:
+                    break;
+            }
+        });
+        rotaryEncodersToUpdate.forEach(key => {
+            const re = rotaryEncoderValues[key];
+            if (re.A == re.B) re.rawCount--;
+            else re.rawCount++;
+            const mult = re.C == 1 ? 1 : 10;
+            const lastPos = re.trueCount;
+            re.trueCount = Math.floor((re.rawCount + 1) / 2);
+            if (lastPos != re.trueCount) {
+                re.moddedCount += (re.trueCount - lastPos) * mult;
+            }
+        });
+    }
     
-    if (!data) return;
-
-    if (data.action === 'PCFValue') {
-        handlePCFValueMessage(data.address, data.value);
-    }
-    else if (data.action === 'YOKE') {
-        handlePilotAction('YOKE', data, {});
-    }
-    else if (data.action === 'message') {
-        console.log("[ARDUINO] : " + data.message);
-    }
-});
-
-port.on('open', () => {
-  console.log('Serial connection opened');
-});
-
-const hardwareConfig = require('./hardwareconfigs/default.json');
-const rotaryEncoderValues = {};
-hardwareConfig.PCFs.forEach(pcf => {
-    pcf.pins.forEach(pin => {
-        switch(pin.type) {
-            case "ROT":
-                rotaryEncoderValues[pin.key] = {};
-                rotaryEncoderValues[pin.key][pin.signal] = 1;
-                rotaryEncoderValues[pin.key].rawCount = 0;
-                rotaryEncoderValues[pin.key].trueCount = 0;
-                rotaryEncoderValues[pin.key].moddedCount = 0;
-                break;
-            case "empty":
-                break;
-            default:
-                console.log('[WARNING] : Unrecognized configuration');
-                break;
-        }
-    });
-});
-
-function handlePCFValueMessage(address, value) {
-    const config = hardwareConfig.PCFs.find(config => config.address == address);
-    let binString = ('' + value).split('').reverse().join('');
-    const rotaryEncodersToUpdate = [];
-    config.pins.forEach((pin, i) => {
-        switch(pin.type) {
-            case "ROT":
-                let oldA;
-                if (pin.signal === 'A') {
-                    oldA = rotaryEncoderValues[pin.key].A;
-                }
-                const newValue = parseInt(binString[i]);
-                rotaryEncoderValues[pin.key][pin.signal] = newValue;
-                if (pin.signal === 'A') {
-                    const changeA = Math.abs(oldA - newValue);
-                    if (changeA == 1) {
-                        rotaryEncodersToUpdate.push(pin.key);
-                    } 
-                }
-                break;
-            case "empty":
-            default:
-                break;
-        }
-    });
-    rotaryEncodersToUpdate.forEach(key => {
-        const re = rotaryEncoderValues[key];
-        if (re.A == re.B) re.rawCount--;
-        else re.rawCount++;
-        const mult = re.C == 1 ? 1 : 10;
-        const lastPos = re.trueCount;
-        re.trueCount = Math.floor((re.rawCount + 1) / 2);
-        if (lastPos != re.trueCount) {
-            re.moddedCount += (re.trueCount - lastPos) * mult;
-        }
-    });
 }
