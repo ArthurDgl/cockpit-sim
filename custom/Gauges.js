@@ -387,7 +387,7 @@ class Compass extends CustomGauge {
     }
 }
 class Thermometer extends CustomGauge{
-    constructor(canvasId, name = 'Th °C') {
+    constructor(canvasId, name = 'Temp') {
         super(canvasId, name, [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50, 60, 70], 5, false, -150, 150);
     }
     drawMiddleLayer(data) {
@@ -396,7 +396,7 @@ class Thermometer extends CustomGauge{
 }
 
 class Suction_Gauge extends CustomGauge{
-    constructor(canvasId, name = 'inHg') {
+    constructor(canvasId, name = 'Suc') {
         super(canvasId, name, [0, 2, 4, 6, 8, 10], 10, false, -150, 150);
     }
     drawMiddleLayer(data) {
@@ -414,7 +414,7 @@ class AMmeter extends CustomGauge{
 }
 
 class Fuel extends CustomGauge{
-    constructor(canvasId, name = '%') {
+    constructor(canvasId, name = 'Fuel') {
         super(canvasId, name, [0, 25, 50, 75, 100], 2, false, -150, 150);
     }
     drawMiddleLayer(data) {

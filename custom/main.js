@@ -226,6 +226,7 @@ socket.on('planeData', (data) => {
     CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1, dialOffset: data.navOBS1});
     CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2, dialOffset: data.navOBS2});
     gaugeFuel.update({angle: data.fuel*3+210});
+    console.log(data.fuel);
     gaugeOil.update({angle: data.oil*3+210});
     gaugeAirSpeed.update({airSpeed: data.airSpeed});
     gaugeEngineSpeed.update({angle: data.engineSpeed*0.07714+225})
@@ -284,13 +285,13 @@ socket.on('loadConfig', (data) => {
                 
                 case "gauge-fuel":
                     if(!gaugeFuel){
-                        gaugeFuel = new Fuel ('gauge-fuel', 'Fuel %',);
+                        gaugeFuel = new Fuel ('gauge-fuel');
                     }
                     break;
                 
                 case "gauge-oil":
                     if(!gaugeOil){
-                        gaugeOil = new Oil('gauge-oil', 'Oil %');
+                        gaugeOil = new Oil('gauge-oil', 'Oil');
                     }
                     break;
 

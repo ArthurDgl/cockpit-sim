@@ -98,6 +98,12 @@ const EVENT_ID_PAUSE = 1;
 const EVENT_VOR1_SET = 2;
 const EVENT_AILERON_SET = 3;
 const EVENT_ELEVATOR_SET = 4;
+const EVENT_RUDDER_SET = 5;
+const EVENT_VIEW_MODE = 6;
+const EVENT_VIEW_MODE_REV = 7;
+const EVENT_VIEW_RESET = 8;
+const EVENT_TRIM_UP = 9;
+const EVENT_TRIM_DN = 10;
 
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
@@ -163,7 +169,7 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'AIRSPEED INDICATED', 'knots', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'PLANE BANK DEGREES', 'degrees', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'PLANE PITCH DEGREES', 'degrees', SimConnectDataType.FLOAT64);
-        handle.addToDataDefinition(DEFINITION_1, 'FUEL TOTAL QUANTITY', 'percent', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'FUEL TOTAL QUANTITY WEIGHT', 'pounds', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'PLANE HEADING DEGREES MAGNETIC', 'degrees', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ADF RADIAL:1', 'degrees', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ENG OIL PRESSURE:1', 'psi', SimConnectDataType.FLOAT64);
@@ -223,10 +229,23 @@ if (USE_SIM) {
         handle.mapClientEventToSimEvent(EVENT_VOR1_SET, 'VOR1_SET');
         handle.mapClientEventToSimEvent(EVENT_AILERON_SET, 'AILERON_SET');
         handle.mapClientEventToSimEvent(EVENT_ELEVATOR_SET, 'ELEVATOR_SET');
+        handle.mapClientEventToSimEvent(EVENT_RUDDER_SET, 'AXIS_RUDDER_SET');
+        handle.mapClientEventToSimEvent(EVENT_VIEW_MODE, 'VIEW_MODE');
+        handle.mapClientEventToSimEvent(EVENT_VIEW_MODE_REV, 'VIEW_MODE_REV');
+        handle.mapClientEventToSimEvent(EVENT_VIEW_RESET, 'VIEW_RESET');
+        handle.mapClientEventToSimEvent(EVENT_TRIM_UP, 'ELEV_TRIM_UP');
+        handle.mapClientEventToSimEvent(EVENT_TRIM_DN, 'ELEV_TRIM_DN');
 
         handle.addClientEventToNotificationGroup(1, EVENT_VOR1_SET, false);
         handle.addClientEventToNotificationGroup(1, EVENT_AILERON_SET, false);
         handle.addClientEventToNotificationGroup(1, EVENT_ELEVATOR_SET, false);
+        handle.addClientEventToNotificationGroup(1, EVENT_RUDDER_SET, false);
+        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_MODE, false);
+        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_MODE_REV, false);
+        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_RESET, false);
+        handle.addClientEventToNotificationGroup(1, EVENT_TRIM_UP, false);
+        handle.addClientEventToNotificationGroup(1, EVENT_TRIM_DN, false);
+
         handle.setNotificationGroupPriority(1, 1);
 
         handlePilotAction = (command, value, data) => {
@@ -239,6 +258,29 @@ if (USE_SIM) {
                 const elevator = Math.max(Math.min(Math.floor(value.pitch / 2 * 16384), 16384), -16383) >>> 0;
                 handle.transmitClientEvent(0, EVENT_AILERON_SET, aileron, 1, 0);
                 handle.transmitClientEvent(0, EVENT_ELEVATOR_SET, elevator, 1, 0);
+            }
+            else if (command === 'PEDALS'){
+                console.log(value);
+                const rudder = Math.max(Math.min(Math.floor((value.pdl_left - value.pdl_right) * 16384), 16384), -16383) >>> 0;
+                handle.transmitClientEvent(0, EVENT_RUDDER_SET, rudder, 1, 0);
+            }
+            else if (command === 'YokePinValue') {
+                console.log(value);
+                const pin = value.pin;
+                const state = value.value;
+                
+                handle.transmitClientEvent(0, EVENT_VIEW_MODE, pin, 1, 0);
+                if(pin == 1 & state == 1){
+                    console.log("Changement de vue détecté (Bouton 1 enfoncé) !");
+                    handle.transmitClientEvent(0, EVENT_VIEW_MODE, 0, 1, 0);
+                }
+                if(pin == 4 & state == 0){
+                    handle.transmitClientEvent(0, EVENT_TRIM_UP, 0, 1, 0);
+                }
+                if(pin == 5 & state == 0){
+                    handle.transmitClientEvent(0, EVENT_TRIM_DN, 0, 1, 0);
+                }
+                
             }
         }
     })
@@ -272,9 +314,17 @@ if(USE_ARDUINO){
         else if (data.action === 'YOKE') {
             handlePilotAction('YOKE', data, {});
         }
+        else if (data.action === 'PEDALS') {
+            handlePilotAction('PEDALS', data, {});
+        }
+        else if (data.action === 'YokePinValue') {
+            handlePilotAction('YokePinValue', data, {});
+        }
         else if (data.action === 'message') {
             console.log("[ARDUINO] : " + data.message);
         }
+        
+
     });
 
     port.on('open', () => {
