@@ -25,6 +25,8 @@ const SimConnectPeriod = simConnect.SimConnectPeriod;
 
 const configFile = require("./presets/default.json");
 
+const hardwareConfig = require('./hardwareconfigs/default.json');
+const rotaryEncoderValues = {};
 
 app.use(express.static(__dirname));
 
@@ -89,21 +91,11 @@ io.on('connection', (socket) => {
     });
 });
 
+const EVENT_ID_PAUSE = 0;
 
 server.listen(3000, () => {
     console.log('Server started at http://localhost:3000');
 });
-
-const EVENT_ID_PAUSE = 1;
-const EVENT_VOR1_SET = 2;
-const EVENT_AILERON_SET = 3;
-const EVENT_ELEVATOR_SET = 4;
-const EVENT_RUDDER_SET = 5;
-const EVENT_VIEW_MODE = 6;
-const EVENT_VIEW_MODE_REV = 7;
-const EVENT_VIEW_RESET = 8;
-const EVENT_TRIM_UP = 9;
-const EVENT_TRIM_DN = 10;
 
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
@@ -118,9 +110,23 @@ function preparePlaneData(simData) {
     return data;
 }
 
+const receivedCallbacks = [];
+function executeOnNextReceive(callback) {
+    receivedCallbacks.push(callback);
+}
+
+function executeReceivedCallbacks() {
+    while (receivedCallbacks.length > 0) {
+        const callback = receivedCallbacks.shift();
+        callback();
+    }
+}
+
 let lastSendTime = Date.now();
 const minElapsedTime = 30;
 function trySendingSimData(simData) {
+    executeReceivedCallbacks();
+
     const now = Date.now();
     const elapsed = now - lastSendTime;
     // lastSendTime = now;
@@ -175,7 +181,7 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'ENG OIL PRESSURE:1', 'psi', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'TURN INDICATOR RATE', 'degrees per second', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'TURN COORDINATOR BALL', 'position', SimConnectDataType.FLOAT64);
-        handle.addToDataDefinition(DEFINITION_1, 'LOCAL TIME', 'seconds', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'LOCAL TIME', 'seconds', SimConnectDataType.INT32);
         handle.addToDataDefinition(DEFINITION_1, 'TOTAL AIR TEMPERATURE', 'celsius', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:1', 'number', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'NAV CDI:2', 'number', SimConnectDataType.FLOAT64);
@@ -185,6 +191,7 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'NAV OBS:2', 'degrees', SimConnectDataType.INT32);
         handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'ELEVATOR TRIM POSITION', 'degrees', SimConnectDataType.FLOAT64);
 
 
         handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
@@ -208,7 +215,7 @@ if (USE_SIM) {
                         oil: recvSimObjectData.data.readFloat64(),
                         turnRate: recvSimObjectData.data.readFloat64(),
                         ball: recvSimObjectData.data.readFloat64(),
-                        time: recvSimObjectData.data.readFloat64(),
+                        time: recvSimObjectData.data.readInt32(), // Int 32
                         temperature: recvSimObjectData.data.readFloat64(),
                         cdi1: recvSimObjectData.data.readFloat64(),
                         cdi2: recvSimObjectData.data.readFloat64(),
@@ -218,6 +225,7 @@ if (USE_SIM) {
                         navOBS2: recvSimObjectData.data.readInt32(), // Int 32
                         suction: recvSimObjectData.data.readFloat64(),
                         ammeter: recvSimObjectData.data.readFloat64(),
+                        elevTrim: recvSimObjectData.data.readFloat64(),
                     }
                     simData = receivedData;
                     trySendingSimData(receivedData);
@@ -226,25 +234,50 @@ if (USE_SIM) {
             }
         });
 
-        handle.mapClientEventToSimEvent(EVENT_VOR1_SET, 'VOR1_SET');
-        handle.mapClientEventToSimEvent(EVENT_AILERON_SET, 'AILERON_SET');
-        handle.mapClientEventToSimEvent(EVENT_ELEVATOR_SET, 'ELEVATOR_SET');
-        handle.mapClientEventToSimEvent(EVENT_RUDDER_SET, 'AXIS_RUDDER_SET');
-        handle.mapClientEventToSimEvent(EVENT_VIEW_MODE, 'VIEW_MODE');
-        handle.mapClientEventToSimEvent(EVENT_VIEW_MODE_REV, 'VIEW_MODE_REV');
-        handle.mapClientEventToSimEvent(EVENT_VIEW_RESET, 'VIEW_RESET');
-        handle.mapClientEventToSimEvent(EVENT_TRIM_UP, 'ELEV_TRIM_UP');
-        handle.mapClientEventToSimEvent(EVENT_TRIM_DN, 'ELEV_TRIM_DN');
+        const clientEvents = {};
+        const registeredClientEvents = new Set();
+        let nextIndex = 1;
 
-        handle.addClientEventToNotificationGroup(1, EVENT_VOR1_SET, false);
-        handle.addClientEventToNotificationGroup(1, EVENT_AILERON_SET, false);
-        handle.addClientEventToNotificationGroup(1, EVENT_ELEVATOR_SET, false);
-        handle.addClientEventToNotificationGroup(1, EVENT_RUDDER_SET, false);
-        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_MODE, false);
-        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_MODE_REV, false);
-        // handle.addClientEventToNotificationGroup(1, EVENT_VIEW_RESET, false);
-        handle.addClientEventToNotificationGroup(1, EVENT_TRIM_UP, false);
-        handle.addClientEventToNotificationGroup(1, EVENT_TRIM_DN, false);
+        function registerClientEvent(eventString) {
+            if (!eventString || registeredClientEvents.has(eventString)) {
+                return;
+            }
+
+            clientEvents[eventString] = nextIndex;
+            registeredClientEvents.add(eventString);
+            nextIndex++;
+            handle.mapClientEventToSimEvent(clientEvents[eventString], eventString);
+            handle.addClientEventToNotificationGroup(1, clientEvents[eventString], false);
+            console.log(eventString + " " + clientEvents[eventString]);
+        }
+
+        function sendEventData(eventString, value) {
+            handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
+        }
+
+        registerClientEvent('AILERON_SET'); // clientEvents['AILERON_SET']
+        registerClientEvent('ELEVATOR_SET');
+        registerClientEvent('AXIS_RUDDER_SET');
+
+        // registerClientEvent('VOR1_SET');
+
+        // registerClientEvent('CABIN_LIGHTS_SET');
+        // registerClientEvent('PARKING_BRAKE_SET');
+        // registerClientEvent('THROTTLE_SET');
+        // registerClientEvent('PITOT_HEAT_SET');
+        // registerClientEvent('NAV_LIGHTS_SET');
+        // registerClientEvent('STROBES_SET');
+        // registerClientEvent('BEACON_LIGHTS_SET');
+        // registerClientEvent('TAXI_LIGHTS_SET');
+        // registerClientEvent('LANDING_LIGHTS_SET');
+
+        if (USE_ARDUINO) {
+            hardwareConfig.YokePins.forEach(pin => {
+                if (pin.activeOn == -1) return;
+
+                registerClientEvent(pin.eventString);
+            });
+        }
 
         handle.setNotificationGroupPriority(1, 1);
 
@@ -253,34 +286,37 @@ if (USE_SIM) {
                 handle.transmitClientEvent(0, EVENT_VOR1_SET, value, 1, 0);
             }
             else if (command === 'YOKE') {
-                // console.log(value);
                 const aileron = Math.max(Math.min(Math.floor(-value.roll / 2 * 16384), 16384), -16383) >>> 0;
                 const elevator = Math.max(Math.min(Math.floor(value.pitch / 2 * 16384), 16384), -16383) >>> 0;
-                handle.transmitClientEvent(0, EVENT_AILERON_SET, aileron, 1, 0);
-                handle.transmitClientEvent(0, EVENT_ELEVATOR_SET, elevator, 1, 0);
+                handle.transmitClientEvent(0, clientEvents['AILERON_SET'], aileron, 1, 0);
+                handle.transmitClientEvent(0, clientEvents['ELEVATOR_SET'], elevator, 1, 0);
             }
             else if (command === 'PEDALS'){
-                console.log(value);
                 const rudder = Math.max(Math.min(Math.floor((value.pdl_left - value.pdl_right) * 16384), 16384), -16383) >>> 0;
-                handle.transmitClientEvent(0, EVENT_RUDDER_SET, rudder, 1, 0);
+                handle.transmitClientEvent(0, clientEvents['AXIS_RUDDER_SET'], rudder, 1, 0);
             }
             else if (command === 'YokePinValue') {
-                console.log(value);
-                const pin = value.pin;
-                const state = value.value;
+                const pinConfig = hardwareConfig.YokePins[value.pin];
+                if (pinConfig.activeOn != value.value) return;
+
+                const multplier = pinConfig.multiplier ?? 1;
                 
-                handle.transmitClientEvent(0, EVENT_VIEW_MODE, pin, 1, 0);
-                if(pin == 1 & state == 1){
-                    console.log("Changement de vue détecté (Bouton 1 enfoncé) !");
-                    handle.transmitClientEvent(0, EVENT_VIEW_MODE, 0, 1, 0);
+                for (let i = 0; i < multplier; i++) {
+                    sendEventData(pinConfig.eventString, value.value);
                 }
-                if(pin == 4 & state == 0){
-                    handle.transmitClientEvent(0, EVENT_TRIM_UP, 0, 1, 0);
+
+                if (pinConfig.eventString === 'ELEV_TRIM_UP' || pinConfig.eventString === 'ELEV_TRIM_DN') {
+                    executeOnNextReceive(() => {
+                        const currentTrim = simData.elevTrim || 0;
+                        const absTrim = Math.abs(currentTrim * 100);
+                        const hexTrim = parseInt("0x" + absTrim);
+                        writeIntegerAndDisappear(hexTrim);
+                    });
                 }
-                if(pin == 5 & state == 0){
-                    handle.transmitClientEvent(0, EVENT_TRIM_DN, 0, 1, 0);
-                }
-                
+            }
+            else if (command === 'Test pr le moment'){
+                //const nom du truc = Math.max(Math.min(Math.floor(value.nom * 16384), 16384), 0) >>> 0;
+                //handle.transmitClientEvent(0, EVENT_THROTTLE_SET, nom du truc, 1,0)
             }
         }
     })
@@ -292,12 +328,47 @@ if (USE_SIM) {
 function limit(x, n) {
     return ((x % n) + n) % n;
 }
-if(USE_ARDUINO){
 
+let currentTimeout = null;
+function writeIntegerAndDisappear(value, delay = 3000) {
+    writeIntegerToSerialPort(value);
+
+    currentTimeout = setTimeout(() => {
+        writeIntegerToSerialPort(0);
+    }, delay);
+}
+
+function writeIntegerToSerialPort(value) {
+    return;
+}
+
+if(USE_ARDUINO){
     const port = new SerialPort({
     path: 'COM3',
     baudRate: 115200
     });
+
+    writeIntegerToSerialPort = (value) => {
+        clearTimeout(currentTimeout);
+        if (!port.isOpen) {
+            console.warn('[SERIAL] Port is not open, skipping write');
+            return false;
+        }
+
+        const integerValue = Number.parseInt(value, 10);
+
+        if (!Number.isInteger(integerValue)) {
+            throw new TypeError(`Expected an integer value, received: ${value}`);
+        }
+
+        port.write(`${integerValue}\n`, (error) => {
+            if (error) {
+                console.error('[SERIAL] Failed to write integer:', error);
+            }
+        });
+
+        return true;
+    }
 
     const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
@@ -323,16 +394,12 @@ if(USE_ARDUINO){
         else if (data.action === 'message') {
             console.log("[ARDUINO] : " + data.message);
         }
-        
-
     });
 
     port.on('open', () => {
     console.log('Serial connection opened');
     });
 
-    const hardwareConfig = require('./hardwareconfigs/default.json');
-    const rotaryEncoderValues = {};
     hardwareConfig.PCFs.forEach(pcf => {
         pcf.pins.forEach(pin => {
             switch(pin.type) {

@@ -64,5 +64,33 @@
         {
             "type": "empty"
         }
+    ],
+    "YokePins" : [
+        {
+            "eventString": "",
+            "activeOn": -1
+        },
+        {
+            "eventString": "",
+            "activeOn": -1
+        },
+        {
+            "eventString": "",
+            "activeOn": -1
+        },
+        {
+            "eventString": "",
+            "activeOn": -1
+        },
+        {
+            "eventString": "ELEV_TRIM_UP",
+            "activeOn": 0,
+            "multiplier": 10
+        },
+        {
+            "eventString": "ELEV_TRIM_DN",
+            "activeOn": 0,
+            "multiplier": 10
+        }
     ]
 }

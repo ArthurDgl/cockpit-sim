@@ -44,8 +44,8 @@
         },
         {
             "type": "gauge-engineSpeed",
-            "x": 30,
-            "y": 566,
+            "x": 25,
+            "y": 576,
             "scale": 1.05,
             "visible": true
         },
@@ -72,22 +72,22 @@
         },
         {
             "type": "compass-2",
-            "x": 26,
-            "y": 18,
+            "x": 18,
+            "y": 25,
             "scale": 1.13,
             "visible": true
         },
         {
             "type": "analog-clock",
-            "x": 23,
-            "y": 1101,
+            "x": 21,
+            "y": 1115,
             "scale": 1.15,
             "visible": true
         },
         {
             "type": "thermometer",
             "x": -54,
-            "y": 1580,
+            "y": 1585,
             "scale": 0.7,
             "visible": true
         },
@@ -100,8 +100,8 @@
         },
         {
             "type": "ammeter",
-            "x": 701,
-            "y": 1573,
+            "x": 702,
+            "y": 1578,
             "scale": 0.72,
             "visible": true
         },

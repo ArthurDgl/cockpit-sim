@@ -69,7 +69,7 @@ io.on('connection', (socket) => {
             pitch:          randomBetween(0,400),
             verticalSpeed:  randomBetween(0,400),
             engineSpeed:    randomBetween(0,3500),
-            fuel:           randomBetween(0,100),
+            fuel:           randomBetween(0,200),
             heading:        randomBetween(0,400),
             adfHeading:     randomBetween(0,400),
             oil:            randomBetween(0,100),

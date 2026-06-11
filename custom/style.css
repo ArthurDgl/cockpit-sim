@@ -3,4 +3,5 @@ body {
     height: 100%;
     user-select: none;
     -moz-user-select: none;
+    background-color: rgb(30, 30, 30);
 }

@@ -225,7 +225,7 @@ socket.on('planeData', (data) => {
     ammeter.update({angle: (data.ammeter+60)*1.5+270});
     CDI1.update({needleOffset: data.cdi1, toFromFlag: data.navToFrom1, dialOffset: data.navOBS1});
     CDI2.update({needleOffset: data.cdi2, toFromFlag: data.navToFrom2, dialOffset: data.navOBS2});
-    gaugeFuel.update({angle: data.fuel*3+210});
+    gaugeFuel.update({angle: data.fuel*1.5+210});
     console.log(data.fuel);
     gaugeOil.update({angle: data.oil*3+210});
     gaugeAirSpeed.update({airSpeed: data.airSpeed});

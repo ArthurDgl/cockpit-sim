@@ -415,7 +415,7 @@ class AMmeter extends CustomGauge{
 
 class Fuel extends CustomGauge{
     constructor(canvasId, name = 'Fuel') {
-        super(canvasId, name, [0, 25, 50, 75, 100], 2, false, -150, 150);
+        super(canvasId, name, [0, 50, 100, 150, 200], 2, false, -150, 150);
     }
     drawMiddleLayer(data) {
         this.drawHand(data.angle/180*Math.PI ?? 0, this.radius * 0.75, this.radius * 0.07, "red");

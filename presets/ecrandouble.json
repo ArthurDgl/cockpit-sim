@@ -1,0 +1,123 @@
+{
+    "components": [
+        {
+            "type": "instrument-attitude",
+            "x": 718,
+            "y": 180,
+            "scale": 2.42,
+            "visible": true
+        },
+        {
+            "type": "instrument-heading",
+            "x": 711,
+            "y": 722,
+            "scale": 2.45,
+            "visible": true
+        },
+        {
+            "type": "instrument-vertical",
+            "x": 717,
+            "y": 1263,
+            "scale": 2.27,
+            "visible": true
+        },
+        {
+            "type": "instrument-altitude",
+            "x": 133,
+            "y": 1262,
+            "scale": 2.27,
+            "visible": true
+        },
+        {
+            "type": "instrument-turn_coordinator",
+            "x": 134,
+            "y": 721,
+            "scale": 2.45,
+            "visible": true
+        },
+        {
+            "type": "gauge-airSpeed",
+            "x": 33,
+            "y": 84,
+            "scale": 1,
+            "visible": true
+        },
+        {
+            "type": "gauge-engineSpeed",
+            "x": 1104,
+            "y": 624,
+            "scale": 1.02,
+            "visible": true
+        },
+        {
+            "type": "gauge-fuel",
+            "x": 115,
+            "y": 1650,
+            "scale": 0.66,
+            "visible": true
+        },
+        {
+            "type": "gauge-oil",
+            "x": 533,
+            "y": 1643,
+            "scale": 0.63,
+            "visible": true
+        },
+        {
+            "type": "compass-1",
+            "x": 1703,
+            "y": 1168,
+            "scale": 1,
+            "visible": true
+        },
+        {
+            "type": "compass-2",
+            "x": 1100,
+            "y": 82,
+            "scale": 1.02,
+            "visible": true
+        },
+        {
+            "type": "analog-clock",
+            "x": 1104,
+            "y": 1168,
+            "scale": 1,
+            "visible": true
+        },
+        {
+            "type": "thermometer",
+            "x": 1028,
+            "y": 1635,
+            "scale": 0.6,
+            "visible": true
+        },
+        {
+            "type": "suction-gauge",
+            "x": 1405,
+            "y": 1640,
+            "scale": 0.6,
+            "visible": true
+        },
+        {
+            "type": "ammeter",
+            "x": 1777,
+            "y": 1639,
+            "scale": 0.6,
+            "visible": true
+        },
+        {
+            "type": "cdi-1",
+            "x": 1698,
+            "y": 81,
+            "scale": 1.02,
+            "visible": true
+        },
+        {
+            "type": "cdi-2",
+            "x": 1699,
+            "y": 622,
+            "scale": 1.02,
+            "visible": true
+        }
+    ]
+}
