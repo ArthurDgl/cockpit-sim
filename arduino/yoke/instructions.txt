@@ -1,0 +1,22 @@
+Pour afficher des choses sur l'afficheur du yoke :
+
+envoyer un int dans le serial
+
+sur 32bits :
+00000000 | 00000000 00000000 00000000
+flags    | value
+
+differents flags :
+
+bit 0 : right dot
+bit 1 : left dot
+bit 2 : clear left most digits (affiche __ XX xx) (les "_" veulent juste dire rien)
+bit 3 : minus on 2nd digit
+
+exemples :
+
+0x02_AB_12_34 affiche | AB.1234 |
+    pourquoi : flags : 0x02 = 0b00000010 donc bit 1 donc left dot
+
+0x0D_00_14_25 affiche | _-14.25 |
+    pourquoi : flags : 0x0D = 0b00001101 donc bits 0 2 3 donc right dot & clear & minus

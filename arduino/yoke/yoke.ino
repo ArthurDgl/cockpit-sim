@@ -95,17 +95,26 @@ void displayByte(char addr, char byte) {
   wrone(addr+2, digitToSeg(byte>>4));
 }
 
-void displayBytes(int bytes, int dots) {
-  if (dots) {
-    wrone(0x04, 0b0001 << 4);
-    wrone(0x0D, 0b0100 << 4);
-  } else {
-    wrone(0x04, 0);
-    wrone(0x0D, 0);
-  }
+void displayBytes(int bytes) {
+  // if (dots) {
+  //   wrone(0x04, 0b0001 << 4);
+  //   wrone(0x0D, 0b0100 << 4);
+  // } else {
+  //   wrone(0x04, 0);
+  //   wrone(0x0D, 0);
+  // }
   displayByte(0x00, bytes);
   displayByte(0x05, bytes >> 8);
   displayByte(0x09, bytes >> 16);
+}
+
+void clearFirst2Segments() {
+  wrone(0x09, 0x00);
+  wrone(0x09+2, 0x00);
+}
+
+void displayMinus() {
+  wrone(0x09, 0x24);
 }
 
 const int pins[PIN_COUNT] = {D0, D1, D2, D3, D4, D5};
@@ -173,8 +182,22 @@ void setup() {
 
 int displayed = 0;
 void display() {
-  int lz = displayed < 0;
-  displayBytes(lz ? -displayed : displayed, lz);
+  int value = displayed & 0xFFFFFF;
+  char flags = displayed >> 24;
+
+  int rightDot = flags & 0x01;
+  wrone(0x04, rightDot ? (0b0001 << 4) : 0);
+
+  int leftDot = flags & 0x02;
+  wrone(0x0D, leftDot ? (0b0100 << 4) : 0);
+
+  int clr1st2 = flags & 0x04;
+  if (clr1st2) clearFirst2Segments();
+
+  int minus = flags & 0x08;
+  if (minus) displayMinus();
+
+  displayBytes(value);
 }
 
 unsigned long lastBlink = 0;
