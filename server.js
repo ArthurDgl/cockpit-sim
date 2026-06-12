@@ -27,16 +27,21 @@ const configFile = require("./presets/default.json");
 
 const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};
+const muxValues = {};
 
 app.use(express.static(__dirname));
 
-let handlePilotAction = ((command, value, data) => {return;});
+function handlePilotAction(command, value, data) {
+    return;
+}
 
+function emitOnSocket(message, data) {
+    return;
+}
 
-let emitOnSocket = (message, data) => {};
-let emitOnIo = (message, data) => {};
-
-let users = {};
+function emitOnIo(message, data) {
+    return;
+}
 
 io.on('connection', (socket) => {
     console.log(`Client has connected: ${socket.id}`);
@@ -52,9 +57,9 @@ io.on('connection', (socket) => {
     
     // socket.emit('loadConfig', configjson);
 
-    socket.on('pilotAction', (data) => {
-        handlePilotAction(data.command, data.value, data);
-    });
+    // socket.on('pilotAction', (data) => {
+    //     handlePilotAction(data.command, data.value, data);
+    // });
 
     socket.on('createNewPreset', (data) => {
             try {
@@ -81,8 +86,6 @@ io.on('connection', (socket) => {
     };
 
     emitOnIo = (message, data) => {
-        // socket.broadcast.to('users').volatile.emit(message, data);
-        // socket.volatile.emit(message, data);
         io.emit(message, data);
     };
     
@@ -245,7 +248,6 @@ if (USE_SIM) {
                         comStandbyFreq2: recvSimObjectData.data.readFloat64(),
                         navActiveFreq2: recvSimObjectData.data.readFloat64(),
                         navStandbyFreq2: recvSimObjectData.data.readFloat64()
-                        
                     }
                     simData = receivedData;
                     trySendingSimData(receivedData);
@@ -280,12 +282,12 @@ if (USE_SIM) {
         registerClientEvent('ELEVATOR_SET');
         registerClientEvent('AXIS_RUDDER_SET');
 
-        registerClientEvent('COM1_RADIO_SWAP');
-        registerClientEvent('COM2_RADIO_SWAP');
-        registerClientEvent('NAV1_RADIO_SWAP');
-        registerClientEvent('NAV2_RADIO_SWAP');
-        registerClientEvent('COM_STBY_RADIO_SET_HZ');
-        registerClientEvent('NAV1_STBY_SET_HZ');
+        // registerClientEvent('COM1_RADIO_SWAP');
+        // registerClientEvent('COM2_RADIO_SWAP');
+        // registerClientEvent('NAV1_RADIO_SWAP');
+        // registerClientEvent('NAV2_RADIO_SWAP');
+        // registerClientEvent('COM_STBY_RADIO_SET_HZ');
+        // registerClientEvent('NAV1_STBY_SET_HZ');
 
 
 
@@ -303,66 +305,89 @@ if (USE_SIM) {
 
         if (USE_ARDUINO) {
             hardwareConfig.YokePins.forEach(pin => {
-                if (pin.activeOn == -1) return;
+                if (!pin.eventString) return;
 
                 registerClientEvent(pin.eventString);
             });
+
+            hardwareConfig.MUXs.forEach(mux => {
+                mux.pins.forEach(pin => {
+                    if (!pin.eventString) return;
+
+                    registerClientEvent(pin.eventString);
+                })
+            })
         }
 
         handle.setNotificationGroupPriority(1, 1);
 
-        handlePilotAction = (command, value, data) => {
-            if (command === 'OBS1') {
-                handle.transmitClientEvent(0, EVENT_VOR1_SET, value, 1, 0);
+        function muxValueChange(muxId, pinId, newValue) {
+            const pinConfig = hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
+            const [min, max] = [pinConfig.min, pinConfig.max];
+
+            const normValue = (newValue - min) / (max - min);
+
+            if (pinConfig.type === 'digital' && pinConfig.eventString) {
+                const digitalValue = normValue > 0.5 ? 1 : 0;
+
+                if (pinConfig.activeOn != digitalValue) return;
+
+                const multiplier = pinConfig.multiplier ?? 1;
+                
+                for (let i = 0; i < multiplier; i++) {
+                    sendEventData(pinConfig.eventString, digitalValue);
+                }
             }
-            else if (command === 'YOKE') {
-                const aileron = Math.max(Math.min(Math.floor(-value.roll / 2 * 16384), 16384), -16383) >>> 0;
-                const elevator = Math.max(Math.min(Math.floor(value.pitch / 2 * 16384), 16384), -16383) >>> 0;
-                handle.transmitClientEvent(0, clientEvents['AILERON_SET'], aileron, 1, 0);
-                handle.transmitClientEvent(0, clientEvents['ELEVATOR_SET'], elevator, 1, 0);
+        }
+
+        handlePilotAction = (command, data) => {
+            if (command === 'YOKE') {
+                const aileron = Math.max(Math.min(Math.floor(-data.roll / 2 * 16384), 16384), -16383) >>> 0;
+                const elevator = Math.max(Math.min(Math.floor(data.pitch / 2 * 16384), 16384), -16383) >>> 0;
+                // handle.transmitClientEvent(0, clientEvents['AILERON_SET'], aileron, 1, 0);
+                // handle.transmitClientEvent(0, clientEvents['ELEVATOR_SET'], elevator, 1, 0);
+                sendEventData('AILERON_SET', aileron);
+                sendEventData('ELEVATOR_SET', elevator);
             }
             else if (command === 'PEDALS'){
-                const rudder = Math.max(Math.min(Math.floor((value.pdl_left - value.pdl_right) * 16384), 16384), -16383) >>> 0;
-                handle.transmitClientEvent(0, clientEvents['AXIS_RUDDER_SET'], rudder, 1, 0);
+                const rudder = Math.max(Math.min(Math.floor((data.pdl_left - data.pdl_right) * 16384), 16384), -16383) >>> 0;
+                // handle.transmitClientEvent(0, clientEvents['AXIS_RUDDER_SET'], rudder, 1, 0);
+                sendEventData('AXIS_RUDDER_SET', rudder);
             }
             else if (command === 'YokePinValue') {
-                const pinConfig = hardwareConfig.YokePins[value.pin];
-                if (pinConfig.activeOn != value.value) return;
+                const pinConfig = hardwareConfig.YokePins[data.pin];
+                if (pinConfig.activeOn != data.value) return;
 
-                const multplier = pinConfig.multiplier ?? 1;
+                const multiplier = pinConfig.multiplier ?? 1;
                 
-                for (let i = 0; i < multplier; i++) {
-                    sendEventData(pinConfig.eventString, value.value);
+                for (let i = 0; i < multiplier; i++) {
+                    sendEventData(pinConfig.eventString, data.value);
                 }
 
                 if (pinConfig.eventString === 'ELEV_TRIM_UP' || pinConfig.eventString === 'ELEV_TRIM_DN') {
                     executeOnNextReceive(() => {
                         const currentTrim = simData.elevTrim || 0;
                         const absTrim = Math.abs(currentTrim * 100);
-                        const hexTrim = parseInt("0x" + absTrim);
+                        const hexTrim = parseInt("0x" + absTrim) + parseInt("0x0D000000");
                         writeIntegerAndDisappear(hexTrim);
-                        
                     });
                 }
             }
-            else if (command === 'RadioSwap (nom temporaire)') {
+            else if (command === 'MuxPinValue') {
+                const pinValues = data.values;
+                const muxId = data.id;
 
-                const radio = typeof value === 'string' ? value : value?.radio ?? value?.target ?? value?.name;
+                const previousValues = muxValues[muxId];
 
-                if (radio === 'COM1') {
-                    handle.transmitClientEvent(0, clientEvents['COM1_RADIO_SWAP'], 1, 1, 0);
-                    // console.log(`Permutation entre la valeur Active et Standby de COM1_RADIO`);
-                }
-                else if (radio === 'COM2') {
-                    handle.transmitClientEvent(0, clientEvents['COM2_RADIO_SWAP'], 1, 1, 0);
-                }
-                else if (radio === 'NAV1') {
-                    handle.transmitClientEvent(0, clientEvents['NAV1_RADIO_SWAP'], 1, 1, 0);
-                    // console.log(`Permutation entre la valeur Active et Standby de NAV1_RADIO`);
-                }
-                else if (radio === 'NAV2') {
-                    handle.transmitClientEvent(0, clientEvents['NAV2_RADIO_SWAP'], 1, 1, 0);
-                }
+                pinValues.forEach((value, i) => {
+                    if (value != previousValues[i]) {
+                        previousValues[i] = value;
+                        muxValueChange(muxId, i, value);
+                    }
+                });
+            }
+            else {
+                console.log('[WARNING] : Unrecognized pilot action : ' + command);
             }
         }
     })
@@ -384,22 +409,26 @@ function writeIntegerAndDisappear(value, delay = 3000) {
     }, delay);
 }
 
-function writeIntegerToSerialPort(value) {
+function writeIntegerToSerialPort(value, port) {
+    return;
+}
+
+function processRotaryEncoderValue(key, value) {
     return;
 }
 
 if(USE_ARDUINO){
-    const port = new SerialPort({
-    path: 'COM3',
-    baudRate: 115200
+    const port1 = new SerialPort({
+        path: 'COM3',
+        baudRate: 115200
     });
 
-    const portArduino = new SerialPort({
+    const port2 = new SerialPort({
         path: 'COM4',
         baudRate: 115200
     });
 
-    writeIntegerToSerialPort = (value) => {
+    writeIntegerToSerialPort = (value, port = port1) => {
         clearTimeout(currentTimeout);
         if (!port.isOpen) {
             console.warn('[SERIAL] Port is not open, skipping write');
@@ -421,13 +450,8 @@ if(USE_ARDUINO){
         return true;
     }
 
-    const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
-    const parserArduino = portArduino.pipe(new ReadlineParser({ delimiter: '\n' }));
-
-
-
-
-    const inputOffsets = {};
+    const parser1 = port1.pipe(new ReadlineParser({ delimiter: '\n' }));
+    const parser2 = port2.pipe(new ReadlineParser({ delimiter: '\n' }));
 
     function processLine(line) {
         data = JSON.parse(line);
@@ -437,39 +461,22 @@ if(USE_ARDUINO){
         if (data.action === 'PCFValue') {
             handlePCFValueMessage(data.address, data.value);
         }
-        else if (data.action === 'YOKE') {
-            handlePilotAction('YOKE', data, {});
-        }
-        else if (data.action === 'PEDALS') {
-            handlePilotAction('PEDALS', data, {});
-        }
-        else if (data.action === 'YokePinValue') {
-            handlePilotAction('YokePinValue', data, {});
-        }
         else if (data.action === 'message') {
             console.log("[ARDUINO] : " + data.message);
         }
+        else{
+            handlePilotAction(data.action, data);
+        }
     }
 
+    parser1.on('data', processLine);
+    parser2.on('data', processLine);
 
-    parser.on('data', (line) => {
-        processLine(line);
-    });
+    const onOpen = () => {console.log('Serial connection opened')};
 
-    parserArduino.on('data', (line) => {
-        processLine(line);
-        console.log("MESSSAGE");
-    });
+    port1.on('open', onOpen);
 
-    
-
-    port.on('open', () => {
-    console.log('Serial connection opened');
-    });
-
-    portArduino.on('open', () => {
-    console.log('Serial connection opened');
-    });
+    port2.on('open', onOpen);
 
     hardwareConfig.PCFs.forEach(pcf => {
         pcf.pins.forEach(pin => {
@@ -488,6 +495,13 @@ if(USE_ARDUINO){
                     break;
             }
         });
+    });
+
+    hardwareConfig.MUXs.forEach(mux => {
+        muxValues[mux.id] = [];
+        mux.pins.forEach(pin => {
+            muxValues[mux.id].push(0);
+        })
     });
 
     function handlePCFValueMessage(address, value) {
@@ -524,19 +538,8 @@ if(USE_ARDUINO){
             re.trueCount = Math.floor((re.rawCount + 1) / 2);
             if (lastPos != re.trueCount) {
                 re.moddedCount += (re.trueCount - lastPos) * mult;
+                processRotaryEncoderValue(key, re.moddedCount);
             }
-
-            if(key === 'COM1_RADIO') {
-                console.log(`Nouvelle fréquence COM1_RADIO : ${re.moddedCount}`);
-                handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
-                
-            }
-            if(key === 'NAV1_RADIO') {
-                console.log(`Nouvelle fréquence NAV1_RADIO : ${re.moddedCount}`);
-                handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
-            }
-
-
         });
     }
     

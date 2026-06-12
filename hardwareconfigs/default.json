@@ -56,34 +56,44 @@
             ]
         }
     ],
-    "AnalogPins" : [
+    "MUXs" : [
         {
-            "type": "varres",
-            "min": 0,
-            "max": 1,
-            "key": "throttle"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
-        },
-        {
-            "type": "empty"
+            "id": 0,
+            "pins": [
+                {
+                    "min": 0,
+                    "max": 1,
+                    "type": "analog",
+                    "key": "throttle"
+                },
+                {
+                    "min": 0,
+                    "max": 3000,
+                    "type": "digital",
+                    "activeOn": 0,
+                    "eventString": "COM1_RADIO_SWAP"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                }
+            ]
         }
+        
     ],
     "YokePins" : [
         {

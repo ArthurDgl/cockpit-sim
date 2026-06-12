@@ -58,7 +58,7 @@ void setup() {
   }
 
   for (int i = 0; i < MUX_n; i++) {
-    pinMode(muxPins[i], INPUT);
+    pinMode(muxPins[i], INPUT_PULLUP);
   }
 }
 
@@ -86,7 +86,7 @@ void loop() {
 }
 
 void readMux(int mux_offset) {
-  Serial.print("{\"action\":\"MUXValues\",\"id\":");
+  Serial.print("{\"action\":\"MuxPinValue\",\"id\":");
   Serial.print(mux_offset);
   Serial.print(",\"values\":[");
   for (int i = 0; i < 16; i++) {
