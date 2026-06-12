@@ -191,7 +191,13 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'NAV OBS:2', 'degrees', SimConnectDataType.INT32);
         handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
+
+        //7 segments
         handle.addToDataDefinition(DEFINITION_1, 'ELEVATOR TRIM POSITION', 'degrees', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'COM ACTIVE FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
+        handle.addToDataDefinition(DEFINITION_1, 'COM STANDBY FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
 
 
         handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
@@ -225,7 +231,12 @@ if (USE_SIM) {
                         navOBS2: recvSimObjectData.data.readInt32(), // Int 32
                         suction: recvSimObjectData.data.readFloat64(),
                         ammeter: recvSimObjectData.data.readFloat64(),
+
                         elevTrim: recvSimObjectData.data.readFloat64(),
+                        comActiveFreq: recvSimObjectData.data.readInt32(),
+                        comStandbyFreq: recvSimObjectData.data.readInt32(),
+                        navActiveFreq: recvSimObjectData.data.readInt32(),
+                        navStandbyFreq: recvSimObjectData.data.readInt32()
                     }
                     simData = receivedData;
                     trySendingSimData(receivedData);
@@ -258,6 +269,16 @@ if (USE_SIM) {
         registerClientEvent('AILERON_SET'); // clientEvents['AILERON_SET']
         registerClientEvent('ELEVATOR_SET');
         registerClientEvent('AXIS_RUDDER_SET');
+
+
+        registerClientEvent('COM1_RADIO_SWAP');
+        registerClientEvent('COM2_RADIO_SWAP');
+        registerClientEvent('NAV1_RADIO_SWAP');
+        registerClientEvent('NAV2_RADIO_SWAP');
+        registerClientEvent('COM_STBY_RADIO_SET_HZ');
+        registerClientEvent('NAV1_STBY_SET_HZ');
+
+
 
         // registerClientEvent('VOR1_SET');
 
@@ -311,12 +332,28 @@ if (USE_SIM) {
                         const absTrim = Math.abs(currentTrim * 100);
                         const hexTrim = parseInt("0x" + absTrim);
                         writeIntegerAndDisappear(hexTrim);
+                        
                     });
                 }
             }
-            else if (command === 'Test pr le moment'){
-                //const nom du truc = Math.max(Math.min(Math.floor(value.nom * 16384), 16384), 0) >>> 0;
-                //handle.transmitClientEvent(0, EVENT_THROTTLE_SET, nom du truc, 1,0)
+            else if (command === 'RadioSwap (nom temporaire)') {
+
+                const radio = typeof value === 'string' ? value : value?.radio ?? value?.target ?? value?.name;
+
+                if (radio === 'COM1') {
+                    handle.transmitClientEvent(0, clientEvents['COM1_RADIO_SWAP'], 1, 1, 0);
+                    // console.log(`Permutation entre la valeur Active et Standby de COM1_RADIO`);
+                }
+                else if (radio === 'COM2') {
+                    handle.transmitClientEvent(0, clientEvents['COM2_RADIO_SWAP'], 1, 1, 0);
+                }
+                else if (radio === 'NAV1') {
+                    handle.transmitClientEvent(0, clientEvents['NAV1_RADIO_SWAP'], 1, 1, 0);
+                    // console.log(`Permutation entre la valeur Active et Standby de NAV1_RADIO`);
+                }
+                else if (radio === 'NAV2') {
+                    handle.transmitClientEvent(0, clientEvents['NAV2_RADIO_SWAP'], 1, 1, 0);
+                }
             }
         }
     })
@@ -346,6 +383,10 @@ if(USE_ARDUINO){
     const port = new SerialPort({
     path: 'COM3',
     baudRate: 115200
+    });
+    const portArduino = new SerialPort({
+        path: 'COM4',
+        baudRate: 115200
     });
 
     writeIntegerToSerialPort = (value) => {
@@ -396,7 +437,7 @@ if(USE_ARDUINO){
         }
     });
 
-    port.on('open', () => {
+    portArduino.on('open', () => {
     console.log('Serial connection opened');
     });
 
@@ -446,14 +487,25 @@ if(USE_ARDUINO){
         });
         rotaryEncodersToUpdate.forEach(key => {
             const re = rotaryEncoderValues[key];
+            const lastPos = re.trueCount;
             if (re.A == re.B) re.rawCount--;
             else re.rawCount++;
             const mult = re.C == 1 ? 1 : 10;
-            const lastPos = re.trueCount;
             re.trueCount = Math.floor((re.rawCount + 1) / 2);
             if (lastPos != re.trueCount) {
                 re.moddedCount += (re.trueCount - lastPos) * mult;
             }
+
+            if(key === 'COM1_RADIO') {
+                console.log(`Nouvelle fréquence COM1_RADIO : ${re.moddedCount}`);
+                handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
+            }
+            if(key === 'NAV1_RADIO') {
+                console.log(`Nouvelle fréquence NAV1_RADIO : ${re.moddedCount}`);
+                handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
+            }
+
+
         });
     }
     

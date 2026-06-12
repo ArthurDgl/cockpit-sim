@@ -19,20 +19,40 @@
                     "key": "cdi-1"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "COM1_RADIO"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "COM1_RADIO"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "COM1_RADIO"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "NAV1_RADIO"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "NAV1_RADIO"
+                }
+                ,
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "NAV1_RADIO"
                 },
                 {
                     "type": "empty"
                 }
+                
             ]
         }
     ],
