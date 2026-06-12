@@ -1,6 +1,6 @@
 // server.js
 
-const USE_SIM = true;
+const USE_SIM = false;
 const USE_ARDUINO = true;
 
 const express = require('express');
@@ -384,6 +384,7 @@ if(USE_ARDUINO){
     path: 'COM3',
     baudRate: 115200
     });
+
     const portArduino = new SerialPort({
         path: 'COM4',
         baudRate: 115200
@@ -413,6 +414,8 @@ if(USE_ARDUINO){
 
     const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
 
+
+
     const inputOffsets = {};
 
     parser.on('data', (line) => {
@@ -435,6 +438,11 @@ if(USE_ARDUINO){
         else if (data.action === 'message') {
             console.log("[ARDUINO] : " + data.message);
         }
+    });
+    
+
+    port.on('open', () => {
+    console.log('Serial connection opened');
     });
 
     portArduino.on('open', () => {
