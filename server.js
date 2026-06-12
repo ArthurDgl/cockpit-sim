@@ -1,6 +1,6 @@
 // server.js
 
-const USE_SIM = false;
+const USE_SIM = true;
 const USE_ARDUINO = true;
 
 const express = require('express');
@@ -194,10 +194,14 @@ if (USE_SIM) {
 
         //7 segments
         handle.addToDataDefinition(DEFINITION_1, 'ELEVATOR TRIM POSITION', 'degrees', SimConnectDataType.FLOAT64);
-        handle.addToDataDefinition(DEFINITION_1, 'COM ACTIVE FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
-        handle.addToDataDefinition(DEFINITION_1, 'COM STANDBY FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
-        handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
-        handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY', 'Frequency BCD16', SimConnectDataType.INT32);
+        handle.addToDataDefinition(DEFINITION_1, 'COM ACTIVE FREQUENCY:1', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'COM STANDBY FREQUENCY:1', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY:1', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY:1', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'COM ACTIVE FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'COM STANDBY FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
 
 
         handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
@@ -233,10 +237,15 @@ if (USE_SIM) {
                         ammeter: recvSimObjectData.data.readFloat64(),
 
                         elevTrim: recvSimObjectData.data.readFloat64(),
-                        comActiveFreq: recvSimObjectData.data.readInt32(),
-                        comStandbyFreq: recvSimObjectData.data.readInt32(),
-                        navActiveFreq: recvSimObjectData.data.readInt32(),
-                        navStandbyFreq: recvSimObjectData.data.readInt32()
+                        comActiveFreq1: recvSimObjectData.data.readFloat64(),
+                        comStandbyFreq1: recvSimObjectData.data.readFloat64(),
+                        navActiveFreq1: recvSimObjectData.data.readFloat64(),
+                        navStandbyFreq1: recvSimObjectData.data.readFloat64(),
+                        comActiveFreq2: recvSimObjectData.data.readFloat64(),
+                        comStandbyFreq2: recvSimObjectData.data.readFloat64(),
+                        navActiveFreq2: recvSimObjectData.data.readFloat64(),
+                        navStandbyFreq2: recvSimObjectData.data.readFloat64()
+                        
                     }
                     simData = receivedData;
                     trySendingSimData(receivedData);
@@ -266,10 +275,10 @@ if (USE_SIM) {
             handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
         }
 
+        
         registerClientEvent('AILERON_SET'); // clientEvents['AILERON_SET']
         registerClientEvent('ELEVATOR_SET');
         registerClientEvent('AXIS_RUDDER_SET');
-
 
         registerClientEvent('COM1_RADIO_SWAP');
         registerClientEvent('COM2_RADIO_SWAP');
@@ -419,6 +428,7 @@ if(USE_ARDUINO){
 
 
     const inputOffsets = {};
+
     function processLine(line) {
         data = JSON.parse(line);
         
@@ -448,6 +458,7 @@ if(USE_ARDUINO){
 
     parserArduino.on('data', (line) => {
         processLine(line);
+        console.log("MESSSAGE");
     });
 
     
@@ -517,12 +528,12 @@ if(USE_ARDUINO){
 
             if(key === 'COM1_RADIO') {
                 console.log(`Nouvelle fréquence COM1_RADIO : ${re.moddedCount}`);
-                // handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
+                handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
                 
             }
             if(key === 'NAV1_RADIO') {
                 console.log(`Nouvelle fréquence NAV1_RADIO : ${re.moddedCount}`);
-                // handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
+                handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
             }
 
 

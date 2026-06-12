@@ -230,12 +230,12 @@ socket.on('planeData', (data) => {
     gaugeOil.update({angle: data.oil*3+210});
     gaugeAirSpeed.update({airSpeed: data.airSpeed});
     gaugeEngineSpeed.update({angle: data.engineSpeed*0.07714+225})
+    
 });
 
 
 socket.on('loadConfig', (data) => {
     if (data && data.components) {
-        
         data.components.forEach((component) => {
             switch (component.type) {
                 
