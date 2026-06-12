@@ -413,12 +413,13 @@ if(USE_ARDUINO){
     }
 
     const parser = port.pipe(new ReadlineParser({ delimiter: '\n' }));
+    const parserArduino = portArduino.pipe(new ReadlineParser({ delimiter: '\n' }));
+
 
 
 
     const inputOffsets = {};
-
-    parser.on('data', (line) => {
+    function processLine(line) {
         data = JSON.parse(line);
         
         if (!data) return;
@@ -438,7 +439,17 @@ if(USE_ARDUINO){
         else if (data.action === 'message') {
             console.log("[ARDUINO] : " + data.message);
         }
+    }
+
+
+    parser.on('data', (line) => {
+        processLine(line);
     });
+
+    parserArduino.on('data', (line) => {
+        processLine(line);
+    });
+
     
 
     port.on('open', () => {
@@ -506,11 +517,12 @@ if(USE_ARDUINO){
 
             if(key === 'COM1_RADIO') {
                 console.log(`Nouvelle fréquence COM1_RADIO : ${re.moddedCount}`);
-                handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
+                // handle.transmitClientEvent(0, clientEvents['COM_STBY_RADIO_SET_HZ'], re.moddedCount, 1, 0);
+                
             }
             if(key === 'NAV1_RADIO') {
                 console.log(`Nouvelle fréquence NAV1_RADIO : ${re.moddedCount}`);
-                handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
+                // handle.transmitClientEvent(0, clientEvents['NAV_STBY_SET_HZ'], re.moddedCount, 1, 0);
             }
 
 
