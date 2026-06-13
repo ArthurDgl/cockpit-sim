@@ -1,10 +1,27 @@
 #include <Wire.h>
 #define PCF_1 0x20
 
+#define IODIRA 0x00
+#define IODIRB 0x01
+
+#define GPIOA 0x12
+#define GPIOB 0x13
+
+#define GPPUA 0x0C
+#define GPPUB 0x0D
+
+#define GPINTENA  0x04
+#define GPINTENB  0x05
+
+#define INTCONA   0x08
+#define INTCONB   0x09
+
+#define IOCON     0x0A
+
 const int selectPins[4] = {9, 10, 11, 12};
 
-const uint8_t muxPins[] = {A3};
-#define MUX_n 1
+const uint8_t muxPins[] = {};
+#define MUX_n 0
 
 volatile bool pcfInterrupt = false;
 uint8_t usedAddresses = 0;
@@ -15,11 +32,11 @@ void setup() {
 
   Wire.begin();
 
-  Wire.beginTransmission(PCF_1);
-  if(Wire.endTransmission() != 0) {
-    printMessage("PCF not responding : Aborting...");
-    while(1);
-  }
+  // Wire.beginTransmission(PCF_1);
+  // if(Wire.endTransmission() != 0) {
+  //   printMessage("PCF not responding : Aborting...");
+  //   while(1);
+  // }
 
   for (int i = 0; i < 8; i++) {
     int address = convertIntToAddress(i);
@@ -43,9 +60,20 @@ void setup() {
     Serial.print(address);
     printMessageSuffix();
 
-    Wire.beginTransmission(address);
-    Wire.write(0b11111111);
-    Wire.endTransmission();
+    writeRegister(address, IODIRA, 0xFF);
+    writeRegister(address, IODIRB, 0xFF);
+
+    writeRegister(address, GPPUA, 0xFF);
+    writeRegister(address, GPPUB, 0xFF);
+
+    writeRegister(address, INTCONA, 0x00);
+    writeRegister(address, INTCONB, 0x00);
+
+    writeRegister(address, GPINTENA, 0xFF);
+    writeRegister(address, GPINTENB, 0xFF);
+
+    uint8_t iocon = 0b01000100; // MIRROR + ODR
+    writeRegister(address, IOCON, iocon);
 
     usedAddresses |= 1 << i;
   }
@@ -81,7 +109,7 @@ void loop() {
   if (millis() - last_blink > 50) {
     last_blink = millis();
     
-    readMux(0);
+    // readMux(0);
   }
 }
 
@@ -111,17 +139,33 @@ void setSelectAddress(int address) {
   }
 }
 
+void writeRegister(uint8_t addr, uint8_t reg, uint8_t value)
+{
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    Wire.write(value);
+    Wire.endTransmission();
+}
+
+uint8_t readRegister(uint8_t addr, uint8_t reg)
+{
+    Wire.beginTransmission(addr);
+    Wire.write(reg);
+    Wire.endTransmission(false);  // repeated start
+
+    Wire.requestFrom(addr, 1);
+
+    if (Wire.available())
+        return Wire.read();
+
+    return 0;
+}
+
 void readI2C(int address) {
-  byte I2CResponse;
+  uint8_t portA = readRegister(address, GPIOA);
+  uint8_t portB = readRegister(address, GPIOB);
 
-  Wire.requestFrom(address, 1);
-
-  if(Wire.available()) {
-    I2CResponse = Wire.read();
-    printPCFValue(address, I2CResponse);
-  } else {
-    printMessage("Failed to get value");
-  }
+  print2PCFValues(address, portB, portA);
 }
   
 void print8bitValue(byte value) {
@@ -141,6 +185,15 @@ void printPCFValue(int pcfAddress, byte value) {
   Serial.print(",\"value\":");
   print8bitValue(value);
   Serial.println("}");
+}
+
+void print2PCFValues(int pcfAddress, byte valueA, byte valueB) {
+  Serial.print("{\"action\":\"PCFValue\",\"address\":");
+  Serial.print(convertAddressToInt(pcfAddress));
+  Serial.print(",\"value\":\"");
+  print8bitValue(valueA);
+  print8bitValue(valueB);
+  Serial.println("\"}");
 }
 
 void printMessagePrefix() {

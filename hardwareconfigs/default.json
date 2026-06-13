@@ -5,52 +5,69 @@
             "pins" : [
                 {
                     "type": "ROT",
-                    "signal": "A",
-                    "key": "cdi-1"
-                },
-                {
-                    "type": "ROT",
-                    "signal": "B",
-                    "key": "cdi-1"
-                },
-                {
-                    "type": "ROT",
                     "signal": "C",
-                    "key": "cdi-1"
+                    "key": "COM1_RADIO",
+                    "sub": "lower"
                 },
                 {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM1_RADIO"
+                    "key": "COM1_RADIO1",
+                    "sub": "upper"
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM1_RADIO"
+                    "key": "COM1_RADIO1",
+                    "sub": "upper"
                 },
                 {
                     "type": "ROT",
                     "signal": "C",
-                    "key": "COM1_RADIO"
-                },
-                {
-                    "type": "ROT",
-                    "signal": "A",
-                    "key": "NAV1_RADIO"
-                },
-                {
-                    "type": "ROT",
-                    "signal": "B",
-                    "key": "NAV1_RADIO"
-                }
-                ,
-                {
-                    "type": "ROT",
-                    "signal": "C",
-                    "key": "NAV1_RADIO"
+                    "key": "COM1_RADIO1",
+                    "sub": "upper"
                 },
                 {
                     "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "COM1_RADIO",
+                    "sub": "lower"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "COM1_RADIO",
+                    "sub": "lower"
                 }
                 
             ]

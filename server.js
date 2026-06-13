@@ -1,6 +1,6 @@
 // server.js
 
-const USE_SIM = true;
+const USE_SIM = false;
 const USE_ARDUINO = true;
 
 const express = require('express');
@@ -414,7 +414,7 @@ function writeIntegerToSerialPort(value, port) {
 }
 
 function processRotaryEncoderValue(key, value) {
-    return;
+    console.log(`[ROTARY ENCODER] : ${key} value changed to ${value}`);
 }
 
 if(USE_ARDUINO){
@@ -454,6 +454,7 @@ if(USE_ARDUINO){
     const parser2 = port2.pipe(new ReadlineParser({ delimiter: '\n' }));
 
     function processLine(line) {
+        console.log(line);
         data = JSON.parse(line);
         
         if (!data) return;
