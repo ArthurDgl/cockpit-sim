@@ -1,6 +1,6 @@
 // server.js
 
-const USE_SIM = false;
+const USE_SIM = true;
 const USE_ARDUINO = true;
 
 const express = require('express');
@@ -29,57 +29,81 @@ const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};
 const muxValues = {};
 
+const EVENT_ID_PAUSE = 0;
+const REQUEST_1 = 0;
+const DEFINITION_1 = 0;
+
 app.use(express.static(__dirname));
 
+const logger = require("./logger");
+
+async function shutdown(signal) {
+  logger.info(`Received ${signal}`);
+
+  await logger.close();
+
+  process.exit(0);
+}
+
+process.on("SIGINT", () => {
+  shutdown("SIGINT");
+});
+
+process.on("SIGTERM", () => {
+  shutdown("SIGTERM");
+});
+
 function handlePilotAction(command, value, data) {
-    return;
+    logger.warn('Initialization not complete');
 }
 
 function emitOnSocket(message, data) {
-    return;
+    logger.warn('Initialization not complete');
 }
 
 function emitOnIo(message, data) {
-    return;
+    logger.warn('Initialization not complete');
+}
+
+function writeIntegerToSerialPort(value, port) {
+    logger.warn('Initialization not complete');
+}
+
+function processRotaryEncoderValue(key, value) {
+    logger.warn('Initialization not complete');
 }
 
 io.on('connection', (socket) => {
-    console.log(`Client has connected: ${socket.id}`);
+    logger.info(`Client has connected: ${socket.id}`);
     socket.join('users');
 
     const files = fs.readdirSync('./presets');
-        socket.emit("files", files);
-    
-        socket.on('loadPreset', (name) => {
-            const file = fs.existsSync(path.join(__dirname, 'presets', `${name}`)) ? `${name}` : 'default.json';
-            socket.emit('loadConfig', require(`./presets/${file}`));
-        });
-    
-    // socket.emit('loadConfig', configjson);
+    socket.emit("files", files);
 
-    // socket.on('pilotAction', (data) => {
-    //     handlePilotAction(data.command, data.value, data);
-    // });
+    socket.on('loadPreset', (name) => {
+        const file = fs.existsSync(path.join(__dirname, 'presets', `${name}`)) ? `${name}` : 'default.json';
+        socket.emit('loadConfig', require(`./presets/${file}`));
+    });
 
     socket.on('createNewPreset', (data) => {
-            try {
-                // path to the presets folder
-                const folderPath = path.join(__dirname, 'presets');
-                const filePath = path.join(folderPath, `${data.name}.json`);
-    
-                // checking if the file doesn't exist, if he doesn't we create it 
-                if (!fs.existsSync(folderPath)){
-                    fs.mkdirSync(folderPath, { recursive: true });
-                }
-                // writting everything into the json file
-                fs.writeFileSync(filePath, JSON.stringify({ components: data.components }, null, 4), 'utf-8');
-    
-                console.log(`New preset created : presets/${data.name}.json`);
-    
-            } catch (error) {
-                console.error(" Error happened when trying to create the JSON file:", error);
+        try {
+            // path to the presets folder
+            const folderPath = path.join(__dirname, 'presets');
+            const filePath = path.join(folderPath, `${data.name}.json`);
+
+            // checking if the file doesn't exist, if he doesn't we create it 
+            if (!fs.existsSync(folderPath)){
+                fs.mkdirSync(folderPath, { recursive: true });
             }
-        })
+            // writting everything into the json file
+            fs.writeFileSync(filePath, JSON.stringify({ components: data.components }, null, 4), 'utf-8');
+
+            logger.info(`New preset created : presets/${data.name}.json`);
+
+        } catch (error) {
+            logger.error('Error happened when trying to create the JSON file:' + error);
+        }
+    });
 
     emitOnSocket = (message, data) => {
         socket.emit(message, data);
@@ -90,18 +114,13 @@ io.on('connection', (socket) => {
     };
     
     socket.on('disconnect', () => {
-        console.log(`Client has disconnected: ${socket.id}`);
+        logger.info(`Client has disconnected: ${socket.id}`);
     });
 });
 
-const EVENT_ID_PAUSE = 0;
-
 server.listen(3000, () => {
-    console.log('Server started at http://localhost:3000');
+    logger.info('Server started at http://localhost:3000');
 });
-
-const REQUEST_1 = 0;
-const DEFINITION_1 = 0;
 
 function preparePlaneData(simData) {
     const data = simData;
@@ -113,14 +132,14 @@ function preparePlaneData(simData) {
     return data;
 }
 
-const receivedCallbacks = [];
+const pendingCallbacks = [];
 function executeOnNextReceive(callback) {
-    receivedCallbacks.push(callback);
+    pendingCallbacks.push(callback);
 }
 
 function executeReceivedCallbacks() {
-    while (receivedCallbacks.length > 0) {
-        const callback = receivedCallbacks.shift();
+    while (pendingCallbacks.length > 0) {
+        const callback = pendingCallbacks.shift();
         callback();
     }
 }
@@ -141,31 +160,32 @@ function trySendingSimData(simData) {
     emitOnIo('planeData', data);
 }
 
-let simData = {};
+let simulationData = {};
 
 if (USE_SIM) {
+    logger.info('Connecting to Flight Simulator...')
     simConnect.open('Cockpit Simulator', simConnect.Protocol.KittyHawk)
     .then(({recvOpen, handle}) => {
-        console.log('Connected to', recvOpen.applicationName);
+        logger.info('Connected to', recvOpen.applicationName);
 
         handle.on('event', function (recvEvent) {
             switch (recvEvent.clientEventId) {
                 case EVENT_ID_PAUSE:
-                    console.log(recvEvent.data === 1 ? 'Sim paused' : 'Sim unpaused');
+                    logger.info(recvEvent.data === 1 ? 'Sim paused' : 'Sim unpaused');
                     break;
             }
         });
 
         handle.on('exception', function (recvException) {
-            console.log(recvException);
+            logger.error(recvException);
         });
 
         handle.on('quit', function () {
-            console.log('Simulator quit');
+            logger.info('Simulator quit');
         });
 
         handle.on('close', function () {
-            console.log('Connection closed unexpectedly (simulator CTD?)');
+            logger.warn('Connection closed unexpectedly (simulator CTD?)');
         });
 
         handle.subscribeToSystemEvent(EVENT_ID_PAUSE, 'Pause');
@@ -249,7 +269,7 @@ if (USE_SIM) {
                         navActiveFreq2: recvSimObjectData.data.readFloat64(),
                         navStandbyFreq2: recvSimObjectData.data.readFloat64()
                     }
-                    simData = receivedData;
+                    simulationData = receivedData;
                     trySendingSimData(receivedData);
                     break;
                 }
@@ -264,17 +284,25 @@ if (USE_SIM) {
             if (!eventString || registeredClientEvents.has(eventString)) {
                 return;
             }
-
+            
             clientEvents[eventString] = nextIndex;
             registeredClientEvents.add(eventString);
             nextIndex++;
             handle.mapClientEventToSimEvent(clientEvents[eventString], eventString);
             handle.addClientEventToNotificationGroup(1, clientEvents[eventString], false);
-            console.log(eventString + " " + clientEvents[eventString]);
+
+            logger.spam('Registered event : ' + eventString + ' with index ' + clientEvents[eventString]);
         }
 
         function sendEventData(eventString, value) {
             handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
+        }
+
+        function processRotaryEncoderValue(pin, value) {
+            if (!clientEvents[pin.key]) return;
+
+            const eventString = pin.key;
+            sendEventData(eventString, value);
         }
 
         
@@ -288,8 +316,6 @@ if (USE_SIM) {
         // registerClientEvent('NAV2_RADIO_SWAP');
         // registerClientEvent('COM_STBY_RADIO_SET_HZ');
         // registerClientEvent('NAV1_STBY_SET_HZ');
-
-
 
         // registerClientEvent('VOR1_SET');
 
@@ -316,7 +342,15 @@ if (USE_SIM) {
 
                     registerClientEvent(pin.eventString);
                 })
-            })
+            });
+
+            hardwareConfig.PinExtenders.forEach(extender => {
+                extender.pins.forEach(pin => {
+                    if (!pin.key) return;
+
+                    registerClientEvent(pin.key);
+                });
+            });
         }
 
         handle.setNotificationGroupPriority(1, 1);
@@ -366,7 +400,7 @@ if (USE_SIM) {
 
                 if (pinConfig.eventString === 'ELEV_TRIM_UP' || pinConfig.eventString === 'ELEV_TRIM_DN') {
                     executeOnNextReceive(() => {
-                        const currentTrim = simData.elevTrim || 0;
+                        const currentTrim = simulationData.elevTrim || 0;
                         const absTrim = Math.abs(currentTrim * 100);
                         const hexTrim = parseInt("0x" + absTrim) + parseInt("0x0D000000");
                         writeIntegerAndDisappear(hexTrim);
@@ -387,17 +421,13 @@ if (USE_SIM) {
                 });
             }
             else {
-                console.log('[WARNING] : Unrecognized pilot action : ' + command);
+                logger.warn('Unrecognized pilot action : ' + command);
             }
         }
     })
     .catch(function (error) {
-        console.log('Connection failed:', error);
+        logger.error('Connection failed: ' + error);
     });
-}
-
-function limit(x, n) {
-    return ((x % n) + n) % n;
 }
 
 let currentTimeout = null;
@@ -409,29 +439,61 @@ function writeIntegerAndDisappear(value, delay = 3000) {
     }, delay);
 }
 
-function writeIntegerToSerialPort(value, port) {
-    return;
-}
-
-function processRotaryEncoderValue(key, value) {
-    console.log(`[ROTARY ENCODER] : ${key} value changed to ${value}`);
-}
-
 if(USE_ARDUINO){
-    const port1 = new SerialPort({
-        path: 'COM3',
-        baudRate: 115200
-    });
+    logger.info('Connecting to Arduino boards...');
 
-    const port2 = new SerialPort({
-        path: 'COM4',
-        baudRate: 115200
-    });
+    let serialPortsEnabled = true;
+    let defaultSerialPort = null;
 
-    writeIntegerToSerialPort = (value, port = port1) => {
+    function disableSerialPorts(message, error) {
+        if (!serialPortsEnabled) return;
+
+        serialPortsEnabled = false;
+        defaultSerialPort = null;
+
+        if (error) {
+            logger.error(message + error);
+        } else {
+            logger.error(message);
+        }
+    }
+
+    function createSerialPort(portPath) {
+        try {
+            const port = new SerialPort({
+                path: portPath,
+                baudRate: 115200
+            });
+
+            port.on('error', (error) => {
+                disableSerialPorts(`Serial port ${portPath} failed `, error);
+            });
+
+            port.on('close', () => {
+                logger.warn(`Serial port ${portPath} closed`);
+            });
+
+            return port;
+        } catch (error) {
+            disableSerialPorts(`Serial port ${portPath} could not be created`, error);
+            return null;
+        }
+    }
+
+    const port1 = createSerialPort('COM3');
+    const port2 = createSerialPort('COM4');
+    defaultSerialPort = port1 ?? port2;
+
+    writeIntegerToSerialPort = (value, port = defaultSerialPort) => {
         clearTimeout(currentTimeout);
+
+        if (!serialPortsEnabled || !port) {
+            logger.warn('Serial port is unavailable, skipping write');
+            return false;
+        }
+
         if (!port.isOpen) {
-            console.warn('[SERIAL] Port is not open, skipping write');
+            logger.warn('Serial port is not open, skipping write');
             return false;
         }
 
@@ -443,46 +505,58 @@ if(USE_ARDUINO){
 
         port.write(`${integerValue}\n`, (error) => {
             if (error) {
-                console.error('[SERIAL] Failed to write integer:', error);
+                logger.error('Serial port failed to write integer:' + error);
             }
         });
 
         return true;
     }
 
-    const parser1 = port1.pipe(new ReadlineParser({ delimiter: '\n' }));
-    const parser2 = port2.pipe(new ReadlineParser({ delimiter: '\n' }));
+    const parser1 = port1 ? port1.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
+    const parser2 = port2 ? port2.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
 
     function processLine(line) {
-        console.log(line);
+        if (!serialPortsEnabled) return;
+
+        logger.spam(line);
         data = JSON.parse(line);
         
         if (!data) return;
 
-        if (data.action === 'PCFValue') {
-            handlePCFValueMessage(data.address, data.value);
+        if (data.action === 'PinExtenderValue') {
+            handlePinExtenderValueMessage(data.address, data.value);
         }
         else if (data.action === 'message') {
-            console.log("[ARDUINO] : " + data.message);
+            logger.arduino(data.message);
         }
         else{
             handlePilotAction(data.action, data);
         }
     }
 
-    parser1.on('data', processLine);
-    parser2.on('data', processLine);
+    if (parser1) {
+        parser1.on('data', processLine);
+    }
 
-    const onOpen = () => {console.log('Serial connection opened')};
+    if (parser2) {
+        parser2.on('data', processLine);
+    }
 
-    port1.on('open', onOpen);
+    const onOpen = () => {logger.info('Serial connection opened')};
 
-    port2.on('open', onOpen);
+    if (port1) {
+        port1.on('open', onOpen);
+    }
 
-    hardwareConfig.PCFs.forEach(pcf => {
-        pcf.pins.forEach(pin => {
+    if (port2) {
+        port2.on('open', onOpen);
+    }
+
+    hardwareConfig.PinExtenders.forEach(extender => {
+        extender.pins.forEach(pin => {
             switch(pin.type) {
                 case "ROT":
+                    if (rotaryEncoderValues[pin.key]) break;
                     rotaryEncoderValues[pin.key] = {};
                     rotaryEncoderValues[pin.key][pin.signal] = 1;
                     rotaryEncoderValues[pin.key].rawCount = 0;
@@ -492,7 +566,7 @@ if(USE_ARDUINO){
                 case "empty":
                     break;
                 default:
-                    console.log('[WARNING] : Unrecognized configuration');
+                    logger.warn('Unrecognized configuration');
                     break;
             }
         });
@@ -505,8 +579,8 @@ if(USE_ARDUINO){
         })
     });
 
-    function handlePCFValueMessage(address, value) {
-        const config = hardwareConfig.PCFs.find(config => config.address == address);
+    function handlePinExtenderValueMessage(address, value) {
+        const config = hardwareConfig.PinExtenders.find(config => config.address == address);
         let binString = ('' + value).split('').reverse().join('');
         const rotaryEncodersToUpdate = [];
         config.pins.forEach((pin, i) => {
@@ -521,7 +595,7 @@ if(USE_ARDUINO){
                     if (pin.signal === 'A') {
                         const changeA = Math.abs(oldA - newValue);
                         if (changeA == 1) {
-                            rotaryEncodersToUpdate.push(pin.key);
+                            rotaryEncodersToUpdate.push(pin);
                         } 
                     }
                     break;
@@ -530,16 +604,17 @@ if(USE_ARDUINO){
                     break;
             }
         });
-        rotaryEncodersToUpdate.forEach(key => {
-            const re = rotaryEncoderValues[key];
+        rotaryEncodersToUpdate.forEach((pin) => {
+            const re = rotaryEncoderValues[pin.key];
             const lastPos = re.trueCount;
             if (re.A == re.B) re.rawCount--;
             else re.rawCount++;
-            const mult = re.C == 1 ? 1 : 10;
+            const multiplier = (re.C == 1 ? 1 : 10) * (pin.mult ?? 1);
             re.trueCount = Math.floor((re.rawCount + 1) / 2);
             if (lastPos != re.trueCount) {
-                re.moddedCount += (re.trueCount - lastPos) * mult;
-                processRotaryEncoderValue(key, re.moddedCount);
+                re.moddedCount += (re.trueCount - lastPos) * multiplier;
+                if (pin.mod) re.moddedCount %= pin.mod;
+                processRotaryEncoderValue(pin, re.moddedCount);
             }
         });
     }

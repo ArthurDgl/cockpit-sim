@@ -180,7 +180,7 @@ void print8bitValue(byte value) {
 }
 
 void printPCFValue(int pcfAddress, byte value) {
-  Serial.print("{\"action\":\"PCFValue\",\"address\":");
+  Serial.print("{\"action\":\"PinExtenderValue\",\"address\":");
   Serial.print(convertAddressToInt(pcfAddress));
   Serial.print(",\"value\":");
   print8bitValue(value);
@@ -188,7 +188,7 @@ void printPCFValue(int pcfAddress, byte value) {
 }
 
 void print2PCFValues(int pcfAddress, byte valueA, byte valueB) {
-  Serial.print("{\"action\":\"PCFValue\",\"address\":");
+  Serial.print("{\"action\":\"PinExtenderValue\",\"address\":");
   Serial.print(convertAddressToInt(pcfAddress));
   Serial.print(",\"value\":\"");
   print8bitValue(valueA);

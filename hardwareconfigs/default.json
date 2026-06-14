@@ -1,31 +1,30 @@
 {
-    "PCFs" : [
+    "PinExtenders" : [
         {
             "address": 0,
             "pins" : [
                 {
                     "type": "ROT",
                     "signal": "C",
-                    "key": "COM1_RADIO",
-                    "sub": "lower"
+                    "key": "COM_STBY_RADIO_SET_HZ"
                 },
                 {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM1_RADIO1",
-                    "sub": "upper"
+                    "key": "COM_STBY_RADIO_SET_HZ",
+                    "mult": 1000
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM1_RADIO1",
-                    "sub": "upper"
+                    "key": "COM_STBY_RADIO_SET_HZ",
+                    "mult": 1000
                 },
                 {
                     "type": "ROT",
                     "signal": "C",
-                    "key": "COM1_RADIO1",
-                    "sub": "upper"
+                    "key": "COM_STBY_RADIO_SET_HZ",
+                    "mult": 1000
                 },
                 {
                     "type": "empty"
@@ -60,14 +59,12 @@
                 {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM1_RADIO",
-                    "sub": "lower"
+                    "key": "COM_STBY_RADIO_SET_HZ"
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM1_RADIO",
-                    "sub": "lower"
+                    "key": "COM_STBY_RADIO_SET_HZ"
                 }
                 
             ]
