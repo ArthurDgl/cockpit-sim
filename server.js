@@ -28,6 +28,14 @@ const configFile = require("./presets/default.json");
 const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};
 const muxValues = {};
+const eventValues = {};
+
+const rotaryEncoderValuesInit = {
+    'COM_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq1', multiplier: 1/1000, mod: 1000, roundAt: 1},
+    'COM_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq1', multiplier: 1/1000, mod: 1000000, roundAt: 1000},
+    'COM2_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq2', multiplier: 1/1000, mod: 1000, roundAt: 1},
+    'COM2_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq2', multiplier: 1/1000, mod: 1000000, roundAt: 1000}
+};
 
 const EVENT_ID_PAUSE = 0;
 const REQUEST_1 = 0;
@@ -54,23 +62,23 @@ process.on("SIGTERM", () => {
 });
 
 function handlePilotAction(command, value, data) {
-    logger.warn('Initialization not complete');
+    logger.warn('Initialization not complete : handlePilotAction');
 }
 
 function emitOnSocket(message, data) {
-    logger.warn('Initialization not complete');
+    logger.warn('Initialization not complete : emitOnSocket');
 }
 
 function emitOnIo(message, data) {
-    logger.warn('Initialization not complete');
+    // logger.warn('Initialization not complete : emitOnIo');
 }
 
 function writeIntegerToSerialPort(value, port) {
-    logger.warn('Initialization not complete');
+    logger.warn('Initialization not complete : writeIntegerToSerialPort');
 }
 
 function processRotaryEncoderValue(key, value) {
-    logger.warn('Initialization not complete');
+    logger.warn('Initialization not complete : processRotaryEncoderValue');
 }
 
 io.on('connection', (socket) => {
@@ -298,11 +306,12 @@ if (USE_SIM) {
             handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
         }
 
-        function processRotaryEncoderValue(pin, value) {
-            if (!clientEvents[pin.key]) return;
-
-            const eventString = pin.key;
-            sendEventData(eventString, value);
+        processRotaryEncoderValue = (pin, value) => {
+            if (pin.eventString) {
+                const eventValue = eventValues[pin.eventString];
+                const multiplier = pin.eventMultiplier ?? 1;
+                sendEventData(pin.eventString, eventValue * multiplier);
+            }
         }
 
         
@@ -346,9 +355,17 @@ if (USE_SIM) {
 
             hardwareConfig.PinExtenders.forEach(extender => {
                 extender.pins.forEach(pin => {
-                    if (!pin.key) return;
+                    if (!pin.eventString) return;
 
-                    registerClientEvent(pin.key);
+                    registerClientEvent(pin.eventString);
+                    if (rotaryEncoderValuesInit[pin.key]) {
+                        executeOnNextReceive(() => {
+                            const { source, multiplier, mod, roundAt } = rotaryEncoderValuesInit[pin.key];
+                            rotaryEncoderValues[pin.key].moddedCount = Math.round(simulationData[source] * (multiplier ?? 1) / (roundAt ?? 1)) * (roundAt ?? 1);
+                            rotaryEncoderValues[pin.key].moddedCount = mod ? rotaryEncoderValues[pin.key].moddedCount % mod : rotaryEncoderValues[pin.key].moddedCount;
+                            eventValues[pin.eventString] += rotaryEncoderValues[pin.key].moddedCount;
+                        });
+                    }
                 });
             });
         }
@@ -518,7 +535,7 @@ if(USE_ARDUINO){
     function processLine(line) {
         if (!serialPortsEnabled) return;
 
-        logger.spam(line);
+        // logger.spam(line);
         data = JSON.parse(line);
         
         if (!data) return;
@@ -562,6 +579,7 @@ if(USE_ARDUINO){
                     rotaryEncoderValues[pin.key].rawCount = 0;
                     rotaryEncoderValues[pin.key].trueCount = 0;
                     rotaryEncoderValues[pin.key].moddedCount = 0;
+                    if (pin.eventString) eventValues[pin.eventString] = 0;
                     break;
                 case "empty":
                     break;
@@ -612,9 +630,14 @@ if(USE_ARDUINO){
             const multiplier = (re.C == 1 ? 1 : 10) * (pin.mult ?? 1);
             re.trueCount = Math.floor((re.rawCount + 1) / 2);
             if (lastPos != re.trueCount) {
+                const oldCount = re.moddedCount;
                 re.moddedCount += (re.trueCount - lastPos) * multiplier;
-                if (pin.mod) re.moddedCount %= pin.mod;
+                if (pin.mod) re.moddedCount = (re.moddedCount + pin.mod) % pin.mod;
+                if (pin.eventString) {
+                    eventValues[pin.eventString] += (re.moddedCount - oldCount);
+                }
                 processRotaryEncoderValue(pin, re.moddedCount);
+                // logger.info(re.moddedCount);
             }
         });
     }

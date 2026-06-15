@@ -6,25 +6,26 @@
                 {
                     "type": "ROT",
                     "signal": "C",
-                    "key": "COM_STBY_RADIO_SET_HZ"
+                    "key": "COM2_STBY_RADIO_SET_HZ_1"
                 },
                 {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM_STBY_RADIO_SET_HZ",
-                    "mult": 1000
+                    "key": "COM2_STBY_RADIO_SET_HZ_1000",
+                    "eventString": "COM2_STBY_RADIO_SET_HZ",
+                    "mult": 1000,
+                    "mod": 1000000,
+                    "eventMultiplier": 1000
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM_STBY_RADIO_SET_HZ",
-                    "mult": 1000
+                    "key": "COM2_STBY_RADIO_SET_HZ_1000"
                 },
                 {
                     "type": "ROT",
                     "signal": "C",
-                    "key": "COM_STBY_RADIO_SET_HZ",
-                    "mult": 1000
+                    "key": "COM2_STBY_RADIO_SET_HZ_1000"
                 },
                 {
                     "type": "empty"
@@ -59,12 +60,15 @@
                 {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM_STBY_RADIO_SET_HZ"
+                    "key": "COM2_STBY_RADIO_SET_HZ_1",
+                    "eventString": "COM2_STBY_RADIO_SET_HZ",
+                    "mod": 1000,
+                    "eventMultiplier": 1000
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM_STBY_RADIO_SET_HZ"
+                    "key": "COM2_STBY_RADIO_SET_HZ_1"
                 }
                 
             ]
