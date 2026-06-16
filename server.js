@@ -31,10 +31,10 @@ const muxValues = {};
 const eventValues = {};
 
 const rotaryEncoderValuesInit = {
-    'COM_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq1', multiplier: 1/1000, mod: 1000, roundAt: 1},
-    'COM_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq1', multiplier: 1/1000, mod: 1000000, roundAt: 1000},
-    'COM2_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq2', multiplier: 1/1000, mod: 1000, roundAt: 1},
-    'COM2_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq2', multiplier: 1/1000, mod: 1000000, roundAt: 1000}
+    'COM_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq1', multiplier: 1, mod: 1000, roundAt: 1},
+    'COM_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq1', multiplier: 1, mod: 1000000, roundAt: 1000},
+    'COM2_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq2', multiplier: 1, mod: 1000, roundAt: 1},
+    'COM2_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq2', multiplier: 1, mod: 1000000, roundAt: 1000}
 };
 
 const EVENT_ID_PAUSE = 0;
@@ -75,6 +75,10 @@ function emitOnIo(message, data) {
 
 function writeIntegerToSerialPort(value, port) {
     logger.warn('Initialization not complete : writeIntegerToSerialPort');
+}
+
+function writeStringToSerialPort(value, port) {
+    logger.warn('Initialization not complete : writeStringToSerialPort');
 }
 
 function processRotaryEncoderValue(key, value) {
@@ -131,12 +135,20 @@ server.listen(3000, () => {
 });
 
 function preparePlaneData(simData) {
-    const data = simData;
+    const data = JSON.parse(JSON.stringify(simData));
     data.verticalSpeed /= 1000;
     data.turnRate *= 8;
     data.ball *= 39.6;
     data.ammeter *= -1;
-    
+    data.comActiveFreq1 = Math.round(data.comActiveFreq1 / 1000);
+    data.comStandbyFreq1 = Math.round(data.comStandbyFreq1 / 1000);
+    data.navActiveFreq1 = Math.round(data.navActiveFreq1 / 1000);
+    data.navStandbyFreq1 = Math.round(data.navStandbyFreq1 / 1000);
+    data.comActiveFreq2 = Math.round(data.comActiveFreq2 / 1000);
+    data.comStandbyFreq2 = Math.round(data.comStandbyFreq2 / 1000);
+    data.navActiveFreq2 = Math.round(data.navActiveFreq2 / 1000);
+    data.navStandbyFreq2 = Math.round(data.navStandbyFreq2 / 1000);
+
     return data;
 }
 
@@ -166,6 +178,9 @@ function trySendingSimData(simData) {
 
     const data = preparePlaneData(simData);
     emitOnIo('planeData', data);
+
+    writeRadioFrequencies(data, 'COM4');
+    scheduleRadioSync('COM4');
 }
 
 let simulationData = {};
@@ -304,6 +319,11 @@ if (USE_SIM) {
 
         function sendEventData(eventString, value) {
             handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
+            if (eventString.endsWith('RADIO_SWAP')) {
+                executeOnNextReceive(() => {
+                    synchronizeRotaryEncoderValues();
+                });
+            }
         }
 
         processRotaryEncoderValue = (pin, value) => {
@@ -353,18 +373,24 @@ if (USE_SIM) {
                 })
             });
 
+            synchronizeRotaryEncoderValues();
+        }
+
+        function synchronizeRotaryEncoderValues() {
+            // logger.info('Synchronizing rotary encoder values...');
             hardwareConfig.PinExtenders.forEach(extender => {
                 extender.pins.forEach(pin => {
                     if (!pin.eventString) return;
 
                     registerClientEvent(pin.eventString);
                     if (rotaryEncoderValuesInit[pin.key]) {
-                        executeOnNextReceive(() => {
+                        executeOnNextReceive(() => executeOnNextReceive(() => {
                             const { source, multiplier, mod, roundAt } = rotaryEncoderValuesInit[pin.key];
-                            rotaryEncoderValues[pin.key].moddedCount = Math.round(simulationData[source] * (multiplier ?? 1) / (roundAt ?? 1)) * (roundAt ?? 1);
+                            const oldValue = rotaryEncoderValues[pin.key].moddedCount;
+                            rotaryEncoderValues[pin.key].moddedCount = Math.round(preparePlaneData(simulationData)[source] * (multiplier ?? 1) / (roundAt ?? 1)) * (roundAt ?? 1);
                             rotaryEncoderValues[pin.key].moddedCount = mod ? rotaryEncoderValues[pin.key].moddedCount % mod : rotaryEncoderValues[pin.key].moddedCount;
-                            eventValues[pin.eventString] += rotaryEncoderValues[pin.key].moddedCount;
-                        });
+                            eventValues[pin.eventString] += rotaryEncoderValues[pin.key].moddedCount - oldValue;
+                        }));
                     }
                 });
             });
@@ -372,16 +398,21 @@ if (USE_SIM) {
 
         handle.setNotificationGroupPriority(1, 1);
 
-        function muxValueChange(muxId, pinId, newValue) {
+        function muxValueChange(muxId, pinId, newValue, oldValue) {
             const pinConfig = hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
-            const [min, max] = [pinConfig.min, pinConfig.max];
+            if (pinConfig.type === 'empty') return;
 
+            const [min, max] = [pinConfig.min, pinConfig.max];
             const normValue = (newValue - min) / (max - min);
+            const digitalValue = normValue > 0.5 ? 1 : 0;
 
             if (pinConfig.type === 'digital' && pinConfig.eventString) {
-                const digitalValue = normValue > 0.5 ? 1 : 0;
+                if (pinConfig.activeOn !== digitalValue) return;
 
-                if (pinConfig.activeOn != digitalValue) return;
+                if (typeof oldValue !== 'undefined') {
+                    const oldDigitalValue = ((oldValue - min) / (max - min)) > 0.5 ? 1 : 0;
+                    if (oldDigitalValue === digitalValue) return;
+                }
 
                 const multiplier = pinConfig.multiplier ?? 1;
                 
@@ -432,8 +463,9 @@ if (USE_SIM) {
 
                 pinValues.forEach((value, i) => {
                     if (value != previousValues[i]) {
+                        const oldValue = previousValues[i];
                         previousValues[i] = value;
-                        muxValueChange(muxId, i, value);
+                        muxValueChange(muxId, i, value, oldValue);
                     }
                 });
             }
@@ -447,31 +479,147 @@ if (USE_SIM) {
     });
 }
 
+const RADIO_WRITE_INTERVAL_MS = 25;
+const RADIO_STARTUP_SYNC_DELAY_MS = 1500;
+const writeQueue = [];
+const queuedRadioFrequencyValues = new Map();
+const lastWrittenRadioFrequencies = new Map();
+let radioSyncTimer = null;
+let flushingInterval = null;
+
+
+function hasRadioFrequencySnapshot(data) {
+    return data
+        && Number.isFinite(Number(data.comActiveFreq1))
+        && Number.isFinite(Number(data.comStandbyFreq1))
+        && Number.isFinite(Number(data.navActiveFreq1))
+        && Number.isFinite(Number(data.navStandbyFreq1))
+        && Number.isFinite(Number(data.comActiveFreq2))
+        && Number.isFinite(Number(data.comStandbyFreq2))
+        && Number.isFinite(Number(data.navActiveFreq2))
+        && Number.isFinite(Number(data.navStandbyFreq2));
+}
+
+function writeRadioFrequencies(data, portName = 'COM4') {
+    enqueueRadioFrequencyIfChanged(0, 0, data.comActiveFreq1, portName);
+    enqueueRadioFrequencyIfChanged(0, 1, data.comStandbyFreq1, portName);
+    enqueueRadioFrequencyIfChanged(1, 0, data.comActiveFreq2, portName);
+    enqueueRadioFrequencyIfChanged(1, 1, data.comStandbyFreq2, portName);
+    enqueueRadioFrequencyIfChanged(2, 0, data.navActiveFreq1, portName);
+    enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName);
+    enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName);
+    enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName);
+}
+
+function enqueueAllRadioFrequencies(data, portName = 'COM4') {
+    // logger.info(`Enqueuing all radio frequencies for sync on ${portName}`);
+    enqueueRadioFrequencyIfChanged(0, 0, data.comActiveFreq1, portName, true);
+    enqueueRadioFrequencyIfChanged(0, 1, data.comStandbyFreq1, portName, true);
+    enqueueRadioFrequencyIfChanged(1, 0, data.comActiveFreq2, portName, true);
+    enqueueRadioFrequencyIfChanged(1, 1, data.comStandbyFreq2, portName, true);
+    enqueueRadioFrequencyIfChanged(2, 0, data.navActiveFreq1, portName, true);
+    enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName, true);
+    enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName, true);
+    enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName, true);
+}
+
+function scheduleRadioSync(portName = 'COM4') {
+    if (radioSyncTimer) {
+        return;
+    }
+
+    radioSyncTimer = setTimeout(() => {
+        radioSyncTimer = null;
+
+        if (!hasRadioFrequencySnapshot(simulationData)) {
+            scheduleRadioSync(portName);
+            return;
+        }
+
+        enqueueAllRadioFrequencies(preparePlaneData(simulationData), portName);
+        // logger.spam(`Radio startup sync queued on ${portName}`);
+    }, RADIO_STARTUP_SYNC_DELAY_MS);
+}
+
+function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4', force = false) {
+    const key = `${portName}:${line}:${display}`;
+    const numericValue = Number(value);
+    const pendingValue = queuedRadioFrequencyValues.get(key);
+
+    if (!force && (lastWrittenRadioFrequencies.get(key) === numericValue || pendingValue === numericValue)) {
+        // logger.spam(`Radio frequency for ${key} is already queued or written, skipping enqueue.`);
+        return false;
+    }
+
+    queuedRadioFrequencyValues.set(key, numericValue);
+
+    const existingIndex = writeQueue.findIndex(item => item.key === key);
+
+    if (existingIndex >= 0) {
+        writeQueue[existingIndex].value = numericValue;
+    } else {
+        writeQueue.push({ key, line, display, value: numericValue, portName });
+    }
+
+    startFlushingQueue();
+    return true;
+}
+
+function startFlushingQueue() {
+    if (writeQueue.length === 0 || flushingInterval) {
+        return;
+    }
+
+    flushingInterval = setInterval(() => {
+        if (writeQueue.length === 0) {
+            clearInterval(flushingInterval);
+            flushingInterval = null;
+            return;
+        }
+        const { key, line, display, value, portName } = writeQueue.shift();
+        queuedRadioFrequencyValues.delete(key);
+        writeRadioFrequency(line, display, value, portName);
+        lastWrittenRadioFrequencies.set(key, value);
+    }, RADIO_WRITE_INTERVAL_MS);
+}
+
+function writeRadioFrequency(line, display, value, portName = 'COM4') {
+    const control = line + 16*display;
+    const valueString = '' + value;
+    const hexString = '0x' + valueString.padStart(7, 'F') + 'F';
+    const encodedValue = Number.parseInt(hexString);
+
+    if (!writeStringToSerialPort(`${control},${encodedValue}`, portName)) {
+        return false;
+    }
+
+    return true;
+}
+
 let currentTimeout = null;
-function writeIntegerAndDisappear(value, delay = 3000) {
-    writeIntegerToSerialPort(value);
+function writeIntegerAndDisappear(value, delay = 3000, portName = 'COM3') {
+    writeIntegerToSerialPort(value, portName);
 
     currentTimeout = setTimeout(() => {
-        writeIntegerToSerialPort(0);
+        writeIntegerToSerialPort(0, portName);
     }, delay);
 }
 
 if(USE_ARDUINO){
     logger.info('Connecting to Arduino boards...');
 
-    let serialPortsEnabled = true;
-    let defaultSerialPort = null;
+    const serialPortNames = ['COM3', 'COM4', 'COM5'];
+    const serialPortState = new Map();
 
-    function disableSerialPorts(message, error) {
-        if (!serialPortsEnabled) return;
+    function markSerialPortUnavailable(portName, error) {
+        const state = serialPortState.get(portName);
+        if (!state || state.unavailable) return;
 
-        serialPortsEnabled = false;
-        defaultSerialPort = null;
-
+        state.unavailable = true;
         if (error) {
-            logger.error(message + error);
+            logger.error(`Serial port ${portName} failed: ${error}`);
         } else {
-            logger.error(message);
+            logger.error(`Serial port ${portName} is unavailable`);
         }
     }
 
@@ -482,39 +630,70 @@ if(USE_ARDUINO){
                 baudRate: 115200
             });
 
+            serialPortState.set(portPath, { port, unavailable: false });
+
             port.on('error', (error) => {
-                disableSerialPorts(`Serial port ${portPath} failed `, error);
+                markSerialPortUnavailable(portPath, error);
             });
 
             port.on('close', () => {
+                markSerialPortUnavailable(portPath);
                 logger.warn(`Serial port ${portPath} closed`);
+            });
+
+            port.on('open', () => {
+                const state = serialPortState.get(portPath);
+                if (state) {
+                    state.unavailable = false;
+                }
+                logger.info(`Serial connection opened (${portPath})`);
             });
 
             return port;
         } catch (error) {
-            disableSerialPorts(`Serial port ${portPath} could not be created`, error);
+            markSerialPortUnavailable(portPath, error);
             return null;
         }
     }
 
     const port1 = createSerialPort('COM3');
     const port2 = createSerialPort('COM4');
-    defaultSerialPort = port1 ?? port2;
+    const port3 = createSerialPort('COM5');
 
-    writeIntegerToSerialPort = (value, port = defaultSerialPort) => {
+    function getSerialPort(portName) {
+        const port = serialPortNames.includes(portName)
+            ? serialPortState.get(portName)?.port
+            : null;
+
+        if (portName && port) {
+            const state = serialPortState.get(portName);
+            if (!state || state.unavailable || !port.isOpen) {
+                return null;
+            }
+            return port;
+        }
+
+        for (const name of serialPortNames) {
+            const state = serialPortState.get(name);
+            if (state && !state.unavailable && state.port && state.port.isOpen) {
+                return state.port;
+            }
+        }
+
+        return null;
+    }
+
+    writeIntegerToSerialPort = (value, portName = 'COM3') => {
         clearTimeout(currentTimeout);
 
-        if (!serialPortsEnabled || !port) {
-            logger.warn('Serial port is unavailable, skipping write');
+        const port = getSerialPort(portName);
+
+        if (!port) {
             return false;
         }
 
-        if (!port.isOpen) {
-            logger.warn('Serial port is not open, skipping write');
-            return false;
-        }
-
-        const integerValue = Number.parseInt(value, 10);
+        const integerValue = Number.parseInt(value);
+        logger.spam(`Writing integer ${integerValue} to serial port ${portName}`);
 
         if (!Number.isInteger(integerValue)) {
             throw new TypeError(`Expected an integer value, received: ${value}`);
@@ -529,15 +708,42 @@ if(USE_ARDUINO){
         return true;
     }
 
+    writeStringToSerialPort = (value, portName = 'COM3') => {
+        clearTimeout(currentTimeout);
+
+        const port = getSerialPort(portName);
+
+        if (!port) {
+            return false;
+        }
+
+        const stringValue = `${value}`;
+        // logger.spam(`Writing string ${stringValue} to serial port ${portName}`);
+
+        port.write(`${stringValue}\n`, (error) => {
+            if (error) {
+                logger.error('Serial port failed to write string:' + error);
+            }
+        });
+
+        return true;
+    }
+
     const parser1 = port1 ? port1.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
     const parser2 = port2 ? port2.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
+    const parser3 = port3 ? port3.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
 
     function processLine(line) {
-        if (!serialPortsEnabled) return;
+        logger.spam(`Received serial line: ${line}`);
+        let data;
 
-        // logger.spam(line);
-        data = JSON.parse(line);
-        
+        try {
+            data = JSON.parse(line);
+        } catch (error) {
+            logger.warn(`Ignoring malformed serial line: ${line}`);
+            return;
+        }
+
         if (!data) return;
 
         if (data.action === 'PinExtenderValue') {
@@ -559,14 +765,8 @@ if(USE_ARDUINO){
         parser2.on('data', processLine);
     }
 
-    const onOpen = () => {logger.info('Serial connection opened')};
-
-    if (port1) {
-        port1.on('open', onOpen);
-    }
-
-    if (port2) {
-        port2.on('open', onOpen);
+    if (parser3) {
+        parser3.on('data', processLine);
     }
 
     hardwareConfig.PinExtenders.forEach(extender => {

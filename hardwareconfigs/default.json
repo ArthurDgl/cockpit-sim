@@ -6,7 +6,57 @@
                 {
                     "type": "ROT",
                     "signal": "C",
+                    "key": "COM_STBY_RADIO_SET_HZ_1000"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "COM_STBY_RADIO_SET_HZ_1",
+                    "eventString": "COM_STBY_RADIO_SET_HZ",
+                    "mult": 5,
+                    "mod": 1000,
+                    "eventMultiplier": 1000
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "COM_STBY_RADIO_SET_HZ_1"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "COM_STBY_RADIO_SET_HZ_1"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "COM2_STBY_RADIO_SET_HZ_1",
+                    "eventString": "COM2_STBY_RADIO_SET_HZ",
+                    "mult": 5,
+                    "mod": 1000,
+                    "eventMultiplier": 1000
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
                     "key": "COM2_STBY_RADIO_SET_HZ_1"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "COM2_STBY_RADIO_SET_HZ_1"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
                 },
                 {
                     "type": "ROT",
@@ -28,47 +78,18 @@
                     "key": "COM2_STBY_RADIO_SET_HZ_1000"
                 },
                 {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
                     "type": "ROT",
                     "signal": "A",
-                    "key": "COM2_STBY_RADIO_SET_HZ_1",
-                    "eventString": "COM2_STBY_RADIO_SET_HZ",
-                    "mod": 1000,
+                    "key": "COM_STBY_RADIO_SET_HZ_1000",
+                    "eventString": "COM_STBY_RADIO_SET_HZ",
+                    "mult": 1000,
+                    "mod": 1000000,
                     "eventMultiplier": 1000
                 },
                 {
                     "type": "ROT",
                     "signal": "B",
-                    "key": "COM2_STBY_RADIO_SET_HZ_1"
+                    "key": "COM_STBY_RADIO_SET_HZ_1000"
                 }
                 
             ]
@@ -79,17 +100,38 @@
             "id": 0,
             "pins": [
                 {
-                    "min": 0,
-                    "max": 1,
-                    "type": "analog",
-                    "key": "throttle"
-                },
-                {
-                    "min": 0,
-                    "max": 3000,
+                    "min": 12,
+                    "max": 1020,
                     "type": "digital",
                     "activeOn": 0,
                     "eventString": "COM1_RADIO_SWAP"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
                 },
                 {
                     "type": "empty"

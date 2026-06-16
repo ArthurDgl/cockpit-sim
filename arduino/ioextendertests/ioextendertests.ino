@@ -1,5 +1,4 @@
 #include <Wire.h>
-#define PCF_1 0x20
 
 #define IODIRA 0x00
 #define IODIRB 0x01
@@ -18,12 +17,12 @@
 
 #define IOCON     0x0A
 
-const int selectPins[4] = {9, 10, 11, 12};
+const int selectPins[4] = {52, 51, 50, 49};
 
-const uint8_t muxPins[] = {};
-#define MUX_n 0
+const uint8_t muxPins[] = {A0};
+#define MUX_n 1
 
-volatile bool pcfInterrupt = false;
+volatile bool PinExtenderInterrupt = false;
 uint8_t usedAddresses = 0;
 
 void setup() {
@@ -32,19 +31,13 @@ void setup() {
 
   Wire.begin();
 
-  // Wire.beginTransmission(PCF_1);
-  // if(Wire.endTransmission() != 0) {
-  //   printMessage("PCF not responding : Aborting...");
-  //   while(1);
-  // }
-
   for (int i = 0; i < 8; i++) {
     int address = convertIntToAddress(i);
 
     Wire.beginTransmission(address);
     if(Wire.endTransmission() != 0) {
       printMessagePrefix();
-      Serial.print("PCF Extender ");
+      Serial.print("PinExtender Extender ");
       Serial.print(i);
       Serial.print(" at address ");
       Serial.print(address);
@@ -54,7 +47,7 @@ void setup() {
     }
 
     printMessagePrefix();
-    Serial.print("Successfully connected to PCF Extender ");
+    Serial.print("Successfully connected to PinExtender Extender ");
     Serial.print(i);
     Serial.print(" at address ");
     Serial.print(address);
@@ -78,8 +71,8 @@ void setup() {
     usedAddresses |= 1 << i;
   }
 
-  pinMode(3, INPUT_PULLUP);
-  attachInterrupt(digitalPinToInterrupt(3), handlePCFInterrupt, FALLING);
+  pinMode(2, INPUT_PULLUP);
+  attachInterrupt(digitalPinToInterrupt(2), handlePinExtenderInterrupt, FALLING);
 
   for (int i = 0; i < 4; i++) {
     pinMode(selectPins[i], OUTPUT);
@@ -90,15 +83,15 @@ void setup() {
   }
 }
 
-void handlePCFInterrupt() {
-    pcfInterrupt = true;
+void handlePinExtenderInterrupt() {
+    PinExtenderInterrupt = true;
 }
 
 unsigned long last_blink = 0;
 
 void loop() {
-  if (pcfInterrupt) {
-    pcfInterrupt = false;
+  if (PinExtenderInterrupt) {
+    PinExtenderInterrupt = false;
 
     for (int i = 0; i < 8; i++) {
       if (!((usedAddresses >> i) & 0b00000001)) continue;
@@ -109,7 +102,7 @@ void loop() {
   if (millis() - last_blink > 50) {
     last_blink = millis();
     
-    // readMux(0);
+    readMux(0);
   }
 }
 
@@ -165,7 +158,7 @@ void readI2C(int address) {
   uint8_t portA = readRegister(address, GPIOA);
   uint8_t portB = readRegister(address, GPIOB);
 
-  print2PCFValues(address, portB, portA);
+  print2PinExtenderValues(address, portB, portA);
 }
   
 void print8bitValue(byte value) {
@@ -179,17 +172,17 @@ void print8bitValue(byte value) {
   Serial.print((value >> 0) & 0b00000001);
 }
 
-void printPCFValue(int pcfAddress, byte value) {
+void printPinExtenderValue(int PinExtenderAddress, byte value) {
   Serial.print("{\"action\":\"PinExtenderValue\",\"address\":");
-  Serial.print(convertAddressToInt(pcfAddress));
+  Serial.print(convertAddressToInt(PinExtenderAddress));
   Serial.print(",\"value\":");
   print8bitValue(value);
   Serial.println("}");
 }
 
-void print2PCFValues(int pcfAddress, byte valueA, byte valueB) {
+void print2PinExtenderValues(int PinExtenderAddress, byte valueA, byte valueB) {
   Serial.print("{\"action\":\"PinExtenderValue\",\"address\":");
-  Serial.print(convertAddressToInt(pcfAddress));
+  Serial.print(convertAddressToInt(PinExtenderAddress));
   Serial.print(",\"value\":\"");
   print8bitValue(valueA);
   print8bitValue(valueB);
