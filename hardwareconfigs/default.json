@@ -50,13 +50,23 @@
                     "key": "COM2_STBY_RADIO_SET_HZ_1"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "NAV1_STBY_SET_HZ_1",
+                    "eventString": "NAV1_STBY_SET_HZ",
+                    "mult": 50,
+                    "mod": 1000,
+                    "eventMultiplier": 1000
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "NAV1_STBY_SET_HZ_1"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "NAV1_STBY_SET_HZ_1"
                 },
                 {
                     "type": "ROT",
@@ -93,6 +103,94 @@
                 }
                 
             ]
+        },
+        {
+            "address": 7,
+            "pins" : [
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "NAV2_STBY_SET_HZ_1"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "NAV2_STBY_SET_HZ_1000",
+                    "eventString": "NAV2_STBY_SET_HZ",
+                    "mult": 1000,
+                    "mod": 1000000,
+                    "eventMultiplier": 1000,
+                    "min": 108000,
+                    "max": 117000
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "NAV2_STBY_SET_HZ_1000"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "NAV2_STBY_SET_HZ_1000"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "NAV1_STBY_SET_HZ_1000",
+                    "eventString": "NAV1_STBY_SET_HZ",
+                    "mult": 1000,
+                    "mod": 1000000,
+                    "eventMultiplier": 1000,
+                    "min": 108000,
+                    "max": 117000
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "NAV1_STBY_SET_HZ_1000"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "NAV1_STBY_SET_HZ_1000"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "NAV2_STBY_SET_HZ_1",
+                    "eventString": "NAV2_STBY_SET_HZ",
+                    "mult": 50,
+                    "mod": 1000,
+                    "eventMultiplier": 1000
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "NAV2_STBY_SET_HZ_1"
+                }
+                
+            ]
         }
     ],
     "MUXs" : [
@@ -104,10 +202,28 @@
                     "max": 1020,
                     "type": "digital",
                     "activeOn": 0,
+                    "eventString": "COM2_RADIO_SWAP"
+                },
+                {
+                    "min": 12,
+                    "max": 1020,
+                    "type": "digital",
+                    "activeOn": 0,
                     "eventString": "COM1_RADIO_SWAP"
                 },
                 {
-                    "type": "empty"
+                    "min": 12,
+                    "max": 1020,
+                    "type": "digital",
+                    "activeOn": 0,
+                    "eventString": "NAV2_RADIO_SWAP"
+                },
+                {
+                    "min": 12,
+                    "max": 1020,
+                    "type": "digital",
+                    "activeOn": 0,
+                    "eventString": "NAV1_RADIO_SWAP"
                 },
                 {
                     "type": "empty"
@@ -135,6 +251,84 @@
                 },
                 {
                     "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                }
+            ]
+        },
+        {
+            "id": 1,
+            "pins": [
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "empty"
+                },
+                {
+                    "type": "analog",
+                    "numValues": 17,
+                    "startAt": 1,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "ADF_COMPLETE_SET",
+                    "key": "ADF_COMPLETE_SET_100",
+                    "multiplier": 100,
+                    "places": [100, 10, 1],
+                    "eventMultiplier": 10000,
+                    "convertToBCD": true
+                },
+                {
+                    "type": "analog",
+                    "numValues": 10,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "ADF_COMPLETE_SET",
+                    "key": "ADF_COMPLETE_SET_10",
+                    "multiplier": 10,
+                    "places": [100, 10, 1],
+                    "eventMultiplier": 10000,
+                    "convertToBCD": true
+
+                },
+                {
+                    "type": "analog",
+                    "numValues": 10,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "ADF_COMPLETE_SET",
+                    "key": "ADF_COMPLETE_SET_1",
+                    "multiplier": 1,
+                    "places": [100, 10, 1],
+                    "eventMultiplier": 10000,
+                    "convertToBCD": true
                 },
                 {
                     "type": "empty"

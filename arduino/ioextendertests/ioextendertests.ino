@@ -19,8 +19,8 @@
 
 const int selectPins[4] = {52, 51, 50, 49};
 
-const uint8_t muxPins[] = {A0};
-#define MUX_n 1
+const uint8_t muxPins[] = {A0, A1};
+#define MUX_n 2
 
 volatile bool PinExtenderInterrupt = false;
 uint8_t usedAddresses = 0;
@@ -72,7 +72,9 @@ void setup() {
   }
 
   pinMode(2, INPUT_PULLUP);
+  pinMode(3, INPUT_PULLUP);
   attachInterrupt(digitalPinToInterrupt(2), handlePinExtenderInterrupt, FALLING);
+  attachInterrupt(digitalPinToInterrupt(3), handlePinExtenderInterrupt, FALLING);
 
   for (int i = 0; i < 4; i++) {
     pinMode(selectPins[i], OUTPUT);
@@ -103,6 +105,7 @@ void loop() {
     last_blink = millis();
     
     readMux(0);
+    readMux(1);
   }
 }
 

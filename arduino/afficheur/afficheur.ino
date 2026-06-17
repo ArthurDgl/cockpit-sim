@@ -4,8 +4,9 @@ LedControl lc1 = LedControl(2, 4, 3, 2);
 LedControl lc2 = LedControl(5, 7, 6, 2);
 LedControl lc3 = LedControl(8, 10, 9, 2);
 LedControl lc4 = LedControl(11, 13, 12, 2);
-LedControl *controls[] = {&lc1, &lc2, &lc3, &lc4};
-int cN = 4;
+LedControl lc5 = LedControl(A0, A2, A1, 1);
+LedControl *controls[] = {&lc1, &lc2, &lc3, &lc4, &lc5};
+int cN = 5;
 char serialBuffer[32];
 
 void setup() {
@@ -23,6 +24,7 @@ void inits() {
     initLc(lc2);
     initLc(lc3);
     initLc(lc4);
+    initLc(lc5);
 }
 
 void loop() {
@@ -55,11 +57,13 @@ void display(unsigned long control, unsigned long value) {
     displayOnLc(*controls[ci], control, value);
 }
 
+long value[] = {0, 0, 0, 0, 0, 0};
+
 void displayOnLc(LedControl lc, unsigned long control, unsigned long value) {
     int di = (control >> 4) & 0xF;
     lc.shutdown(di, false);
-    lc.setIntensity(di, 1);
-    lc.clearDisplay(di);
+    lc.setIntensity(di, 15);
+    // lc.clearDisplay(di);
     for (int i = 0; i < 8; i++) {
         int val = (value >> i*4) & 0xF;
         int dp = i == 4;
@@ -74,10 +78,10 @@ void initLc(LedControl lc) {
         lc.shutdown(d, false);
         lc.shutdown(d, false);
         lc.shutdown(d, false);
-        lc.setIntensity(d, 1);
-        lc.setIntensity(d, 1);
-        lc.setIntensity(d, 1);
-        lc.setIntensity(d, 1);
+        lc.setIntensity(d, 15);
+        lc.setIntensity(d, 15);
+        lc.setIntensity(d, 15);
+        lc.setIntensity(d, 15);
         // lc.clearDisplay(d);
 
         for (int digit = 0; digit < 8; digit++) {

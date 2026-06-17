@@ -28,13 +28,16 @@ const configFile = require("./presets/default.json");
 const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};
 const muxValues = {};
-const eventValues = {};
 
 const rotaryEncoderValuesInit = {
     'COM_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq1', multiplier: 1, mod: 1000, roundAt: 1},
     'COM_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq1', multiplier: 1, mod: 1000000, roundAt: 1000},
     'COM2_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq2', multiplier: 1, mod: 1000, roundAt: 1},
-    'COM2_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq2', multiplier: 1, mod: 1000000, roundAt: 1000}
+    'COM2_STBY_RADIO_SET_HZ_1000': {source: 'comStandbyFreq2', multiplier: 1, mod: 1000000, roundAt: 1000},
+    'NAV1_STBY_SET_HZ_1': {source: 'navStandbyFreq1', multiplier: 1, mod: 1000, roundAt: 1},
+    'NAV1_STBY_SET_HZ_1000': {source: 'navStandbyFreq1', multiplier: 1, mod: 1000000, roundAt: 1000},
+    'NAV2_STBY_SET_HZ_1': {source: 'navStandbyFreq2', multiplier: 1, mod: 1000, roundAt: 1},
+    'NAV2_STBY_SET_HZ_1000': {source: 'navStandbyFreq2', multiplier: 1, mod: 1000000, roundAt: 1000}
 };
 
 const EVENT_ID_PAUSE = 0;
@@ -148,6 +151,8 @@ function preparePlaneData(simData) {
     data.comStandbyFreq2 = Math.round(data.comStandbyFreq2 / 1000);
     data.navActiveFreq2 = Math.round(data.navActiveFreq2 / 1000);
     data.navStandbyFreq2 = Math.round(data.navStandbyFreq2 / 1000);
+    // logger.spam('Converting ADF frequency from BCD32 to int: ' + data.adfActiveFreq1);
+    data.adfActiveFreq1 = Math.floor(bcd32ToInt(data.adfActiveFreq1)/10000);
 
     return data;
 }
@@ -162,6 +167,29 @@ function executeReceivedCallbacks() {
         const callback = pendingCallbacks.shift();
         callback();
     }
+}
+
+function bcd32ToInt(bcd32) {
+    // logger.spam(' converting base 2 value : ' + bcd32.toString(2));
+    let value = 0;
+    for (let shift = 0, place = 1; shift < 32; shift += 4, place *= 10) {
+        const digit = (bcd32 >> shift) & 0xF;
+        if (digit > 9) {
+            break;
+        }
+        value += digit * place;
+    }
+    return value;
+}
+
+function intToBcd32(value) {
+    let bcd32 = 0;
+    for (let shift = 0; shift < 32; shift += 4) {
+        const digit = value % 10;
+        bcd32 |= (digit & 0xF) << shift;
+        value = Math.floor(value / 10);
+    }
+    return bcd32;
 }
 
 let lastSendTime = Date.now();
@@ -200,7 +228,7 @@ if (USE_SIM) {
         });
 
         handle.on('exception', function (recvException) {
-            logger.error(recvException);
+            logger.error('Exception received: ' + recvException.exception);
         });
 
         handle.on('quit', function () {
@@ -248,6 +276,7 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'COM STANDBY FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'ADF ACTIVE FREQUENCY:1', 'Frequency ADF BCD32', SimConnectDataType.INT32);
 
 
         handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
@@ -290,7 +319,8 @@ if (USE_SIM) {
                         comActiveFreq2: recvSimObjectData.data.readFloat64(),
                         comStandbyFreq2: recvSimObjectData.data.readFloat64(),
                         navActiveFreq2: recvSimObjectData.data.readFloat64(),
-                        navStandbyFreq2: recvSimObjectData.data.readFloat64()
+                        navStandbyFreq2: recvSimObjectData.data.readFloat64(),
+                        adfActiveFreq1: recvSimObjectData.data.readInt32() // Int 32 in BCD
                     }
                     simulationData = receivedData;
                     trySendingSimData(receivedData);
@@ -314,10 +344,11 @@ if (USE_SIM) {
             handle.mapClientEventToSimEvent(clientEvents[eventString], eventString);
             handle.addClientEventToNotificationGroup(1, clientEvents[eventString], false);
 
-            logger.spam('Registered event : ' + eventString + ' with index ' + clientEvents[eventString]);
+            logger.info('Registered event : ' + eventString + ' with index ' + clientEvents[eventString]);
         }
 
         function sendEventData(eventString, value) {
+            // logger.spam(`Sending event data for ${eventString}: ${value}`);
             handle.transmitClientEvent(0, clientEvents[eventString], value, 1, 0);
             if (eventString.endsWith('RADIO_SWAP')) {
                 executeOnNextReceive(() => {
@@ -326,11 +357,32 @@ if (USE_SIM) {
             }
         }
 
+        function getFullRotaryEncoderValue(pin) {
+            const rawKeyName = pin.key.replace(/_(\d+)$/, '');
+            const thousands = rotaryEncoderValues[rawKeyName + '_1000']?.moddedCount ?? 0;
+            const ones = rotaryEncoderValues[rawKeyName + '_1']?.moddedCount ?? 0;
+            return thousands + ones;
+        }
+
+        function getFullAnalogPinValue(pin) {
+            const rawKeyName = pin.key.replace(/_(\d+)$/, '');
+            const places = pin.places ?? [1];
+            let fullValue = 0;
+            for (let i = 0; i < places.length; i++) {
+                const place = places[i];
+                const placeKey = `${rawKeyName}_${place}`;
+                const placeValue = analogPinValues[placeKey] ?? 0;
+                fullValue += placeValue * place;
+            }
+            return fullValue;
+        }
+
         processRotaryEncoderValue = (pin, value) => {
+            // logger.spam(`Rotary encoder value changed for ${pin.key}: ${value}`);
             if (pin.eventString) {
-                const eventValue = eventValues[pin.eventString];
                 const multiplier = pin.eventMultiplier ?? 1;
-                sendEventData(pin.eventString, eventValue * multiplier);
+                const fullValue = getFullRotaryEncoderValue(pin);
+                sendEventData(pin.eventString, fullValue * multiplier);
             }
         }
 
@@ -386,10 +438,8 @@ if (USE_SIM) {
                     if (rotaryEncoderValuesInit[pin.key]) {
                         executeOnNextReceive(() => executeOnNextReceive(() => {
                             const { source, multiplier, mod, roundAt } = rotaryEncoderValuesInit[pin.key];
-                            const oldValue = rotaryEncoderValues[pin.key].moddedCount;
                             rotaryEncoderValues[pin.key].moddedCount = Math.round(preparePlaneData(simulationData)[source] * (multiplier ?? 1) / (roundAt ?? 1)) * (roundAt ?? 1);
                             rotaryEncoderValues[pin.key].moddedCount = mod ? rotaryEncoderValues[pin.key].moddedCount % mod : rotaryEncoderValues[pin.key].moddedCount;
-                            eventValues[pin.eventString] += rotaryEncoderValues[pin.key].moddedCount - oldValue;
                         }));
                     }
                 });
@@ -398,6 +448,7 @@ if (USE_SIM) {
 
         handle.setNotificationGroupPriority(1, 1);
 
+        const analogPinValues = {};
         function muxValueChange(muxId, pinId, newValue, oldValue) {
             const pinConfig = hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
             if (pinConfig.type === 'empty') return;
@@ -418,6 +469,25 @@ if (USE_SIM) {
                 
                 for (let i = 0; i < multiplier; i++) {
                     sendEventData(pinConfig.eventString, digitalValue);
+                }
+            }
+            else if (pinConfig.type === 'analog' && pinConfig.eventString) {
+                // logger.spam(`Mux value changed for ${pinConfig.key}: ${newValue} (normalized: ${normValue})`);
+                const multiplier = pinConfig.multiplier ?? 1;
+                let value = normValue;
+                if (pinConfig.numValues) {
+                    value = Math.round(value * (pinConfig.numValues - 1)) + (pinConfig.startAt ?? 0);
+                }
+                analogPinValues[pinConfig.key] = value;
+
+                if (pinConfig.places) {
+                    let fullValue = getFullAnalogPinValue(pinConfig) * pinConfig.eventMultiplier ?? 1;
+                    // logger.spam(fullValue);
+                    if (pinConfig.convertToBCD) {
+                        fullValue = intToBcd32(fullValue);
+                        // logger.spam('Converted to BCD32: ' + fullValue.toString(16));
+                    }
+                    sendEventData(pinConfig.eventString, fullValue);
                 }
             }
         }
@@ -450,12 +520,14 @@ if (USE_SIM) {
                     executeOnNextReceive(() => {
                         const currentTrim = simulationData.elevTrim || 0;
                         const absTrim = Math.abs(currentTrim * 100);
-                        const hexTrim = parseInt("0x" + absTrim) + parseInt("0x0D000000");
+                        const prefix = currentTrim < 0 ? '0D' : '05';
+                        const hexTrim = parseInt("0x" + absTrim) + parseInt("0x" + prefix +"000000");
                         writeIntegerAndDisappear(hexTrim);
                     });
                 }
             }
             else if (command === 'MuxPinValue') {
+                // logger.spam('received data from mux : ' + JSON.stringify(data));
                 const pinValues = data.values;
                 const muxId = data.id;
 
@@ -509,6 +581,7 @@ function writeRadioFrequencies(data, portName = 'COM4') {
     enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName);
     enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName);
     enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName);
+    enqueueRadioFrequencyIfChanged(4, 0, data.adfActiveFreq1, portName);
 }
 
 function enqueueAllRadioFrequencies(data, portName = 'COM4') {
@@ -521,6 +594,7 @@ function enqueueAllRadioFrequencies(data, portName = 'COM4') {
     enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName, true);
     enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName, true);
     enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName, true);
+    enqueueRadioFrequencyIfChanged(4, 0, data.adfActiveFreq1, portName, true, 'ADF');
 }
 
 function scheduleRadioSync(portName = 'COM4') {
@@ -541,7 +615,7 @@ function scheduleRadioSync(portName = 'COM4') {
     }, RADIO_STARTUP_SYNC_DELAY_MS);
 }
 
-function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4', force = false) {
+function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4', force = false, type = 'RADIO') {
     const key = `${portName}:${line}:${display}`;
     const numericValue = Number(value);
     const pendingValue = queuedRadioFrequencyValues.get(key);
@@ -587,6 +661,7 @@ function writeRadioFrequency(line, display, value, portName = 'COM4') {
     const control = line + 16*display;
     const valueString = '' + value;
     const hexString = '0x' + valueString.padStart(7, 'F') + 'F';
+    // logger.spam('hexString : ' + hexString);
     const encodedValue = Number.parseInt(hexString);
 
     if (!writeStringToSerialPort(`${control},${encodedValue}`, portName)) {
@@ -693,7 +768,7 @@ if(USE_ARDUINO){
         }
 
         const integerValue = Number.parseInt(value);
-        logger.spam(`Writing integer ${integerValue} to serial port ${portName}`);
+        // logger.spam(`Writing integer ${integerValue} to serial port ${portName}`);
 
         if (!Number.isInteger(integerValue)) {
             throw new TypeError(`Expected an integer value, received: ${value}`);
@@ -734,7 +809,7 @@ if(USE_ARDUINO){
     const parser3 = port3 ? port3.pipe(new ReadlineParser({ delimiter: '\n' })) : null;
 
     function processLine(line) {
-        logger.spam(`Received serial line: ${line}`);
+        // logger.spam(`Received serial line: ${line}`);
         let data;
 
         try {
@@ -779,7 +854,6 @@ if(USE_ARDUINO){
                     rotaryEncoderValues[pin.key].rawCount = 0;
                     rotaryEncoderValues[pin.key].trueCount = 0;
                     rotaryEncoderValues[pin.key].moddedCount = 0;
-                    if (pin.eventString) eventValues[pin.eventString] = 0;
                     break;
                 case "empty":
                     break;
@@ -827,15 +901,13 @@ if(USE_ARDUINO){
             const lastPos = re.trueCount;
             if (re.A == re.B) re.rawCount--;
             else re.rawCount++;
-            const multiplier = (re.C == 1 ? 1 : 10) * (pin.mult ?? 1);
             re.trueCount = Math.floor((re.rawCount + 1) / 2);
             if (lastPos != re.trueCount) {
-                const oldCount = re.moddedCount;
+                const multiplier = (re.C == 1 ? 1 : 10) * (pin.mult ?? 1);
                 re.moddedCount += (re.trueCount - lastPos) * multiplier;
                 if (pin.mod) re.moddedCount = (re.moddedCount + pin.mod) % pin.mod;
-                if (pin.eventString) {
-                    eventValues[pin.eventString] += (re.moddedCount - oldCount);
-                }
+                if (pin.min) re.moddedCount = Math.max(re.moddedCount, pin.min);
+                if (pin.max) re.moddedCount = Math.min(re.moddedCount, pin.max);
                 processRotaryEncoderValue(pin, re.moddedCount);
                 // logger.info(re.moddedCount);
             }
