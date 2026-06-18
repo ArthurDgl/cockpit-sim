@@ -28,6 +28,7 @@ const configFile = require("./presets/default.json");
 const hardwareConfig = require('./hardwareconfigs/default.json');
 const rotaryEncoderValues = {};
 const muxValues = {};
+const permanentValues = {};
 
 const rotaryEncoderValuesInit = {
     'COM_STBY_RADIO_SET_HZ_1': {source: 'comStandbyFreq1', multiplier: 1, mod: 1000, roundAt: 1},
@@ -43,6 +44,7 @@ const rotaryEncoderValuesInit = {
 const EVENT_ID_PAUSE = 0;
 const REQUEST_1 = 0;
 const DEFINITION_1 = 0;
+const DEFINITION_WRITE = 1;
 
 app.use(express.static(__dirname));
 
@@ -169,10 +171,11 @@ function executeReceivedCallbacks() {
     }
 }
 
-function bcd32ToInt(bcd32) {
+function bcd32ToInt(bcd32, isBCD16 = false) {
     // logger.spam(' converting base 2 value : ' + bcd32.toString(2));
     let value = 0;
-    for (let shift = 0, place = 1; shift < 32; shift += 4, place *= 10) {
+    const stop = isBCD16 ? 16 : 32;
+    for (let shift = 0, place = 1; shift < stop; shift += 4, place *= 10) {
         const digit = (bcd32 >> shift) & 0xF;
         if (digit > 9) {
             break;
@@ -182,9 +185,10 @@ function bcd32ToInt(bcd32) {
     return value;
 }
 
-function intToBcd32(value) {
+function intToBcd32(value, isBCD16 = false) {
     let bcd32 = 0;
-    for (let shift = 0; shift < 32; shift += 4) {
+    const stop = isBCD16 ? 16 : 32;
+    for (let shift = 0; shift < stop; shift += 4) {
         const digit = value % 10;
         bcd32 |= (digit & 0xF) << shift;
         value = Math.floor(value / 10);
@@ -277,7 +281,9 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'NAV ACTIVE FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'NAV STANDBY FREQUENCY:2', 'Hertz', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ADF ACTIVE FREQUENCY:1', 'Frequency ADF BCD32', SimConnectDataType.INT32);
+        handle.addToDataDefinition(DEFINITION_1, 'TRANSPONDER CODE:1', 'Number', SimConnectDataType.INT32);
 
+        handle.addToDataDefinition(DEFINITION_WRITE, 'TRANSPONDER STATE', 'Enum', SimConnectDataType.INT32);
 
         handle.requestDataOnSimObject(REQUEST_1, DEFINITION_1, SimConnectConstants.OBJECT_ID_USER, SimConnectPeriod.SIM_FRAME);
 
@@ -320,7 +326,8 @@ if (USE_SIM) {
                         comStandbyFreq2: recvSimObjectData.data.readFloat64(),
                         navActiveFreq2: recvSimObjectData.data.readFloat64(),
                         navStandbyFreq2: recvSimObjectData.data.readFloat64(),
-                        adfActiveFreq1: recvSimObjectData.data.readInt32() // Int 32 in BCD
+                        adfActiveFreq1: recvSimObjectData.data.readInt32(), // Int 32 in BCD
+                        transponderCode: recvSimObjectData.data.readInt32() // Int 32
                     }
                     simulationData = receivedData;
                     trySendingSimData(receivedData);
@@ -366,6 +373,7 @@ if (USE_SIM) {
 
         function getFullAnalogPinValue(pin) {
             const rawKeyName = pin.key.replace(/_(\d+)$/, '');
+            // logger.spam(rawKeyName);
             const places = pin.places ?? [1];
             let fullValue = 0;
             for (let i = 0; i < places.length; i++) {
@@ -373,6 +381,7 @@ if (USE_SIM) {
                 const placeKey = `${rawKeyName}_${place}`;
                 const placeValue = analogPinValues[placeKey] ?? 0;
                 fullValue += placeValue * place;
+                // logger.spam(`Analog pin value for ${placeKey}: ${placeValue}, place: ${place}, fullValue: ${fullValue}`);
             }
             return fullValue;
         }
@@ -450,10 +459,10 @@ if (USE_SIM) {
 
         const analogPinValues = {};
         function muxValueChange(muxId, pinId, newValue, oldValue) {
-            const pinConfig = hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
+            const pinConfig = muxId == -1 ? hardwareConfig.CustomPins[pinId] : hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
             if (pinConfig.type === 'empty') return;
 
-            const [min, max] = [pinConfig.min, pinConfig.max];
+            const [min, max] = [pinConfig.min ?? 0, pinConfig.max ?? 1];
             const normValue = (newValue - min) / (max - min);
             const digitalValue = normValue > 0.5 ? 1 : 0;
 
@@ -471,6 +480,9 @@ if (USE_SIM) {
                     sendEventData(pinConfig.eventString, digitalValue);
                 }
             }
+            else if (pinConfig.type === 'digital' && pinConfig.permanentValueKey) {
+                permanentValues[pinConfig.permanentValueKey] = digitalValue;
+            }
             else if (pinConfig.type === 'analog' && pinConfig.eventString) {
                 // logger.spam(`Mux value changed for ${pinConfig.key}: ${newValue} (normalized: ${normValue})`);
                 const multiplier = pinConfig.multiplier ?? 1;
@@ -481,10 +493,10 @@ if (USE_SIM) {
                 analogPinValues[pinConfig.key] = value;
 
                 if (pinConfig.places) {
-                    let fullValue = getFullAnalogPinValue(pinConfig) * pinConfig.eventMultiplier ?? 1;
-                    // logger.spam(fullValue);
+                    let fullValue = getFullAnalogPinValue(pinConfig) * (pinConfig.eventMultiplier ?? 1);
+                    // logger.spam(`Full analog pin value for ${pinConfig.key}: ${fullValue}`);
                     if (pinConfig.convertToBCD) {
-                        fullValue = intToBcd32(fullValue);
+                        fullValue = intToBcd32(fullValue, pinConfig.convertToBCD === 'BCD16');
                         // logger.spam('Converted to BCD32: ' + fullValue.toString(16));
                     }
                     sendEventData(pinConfig.eventString, fullValue);
@@ -526,10 +538,10 @@ if (USE_SIM) {
                     });
                 }
             }
-            else if (command === 'MuxPinValue') {
+            else if (command === 'MuxPinValue' || command === 'CustomPins') {
                 // logger.spam('received data from mux : ' + JSON.stringify(data));
                 const pinValues = data.values;
-                const muxId = data.id;
+                const muxId = data.id ?? -1;
 
                 const previousValues = muxValues[muxId];
 
@@ -581,7 +593,10 @@ function writeRadioFrequencies(data, portName = 'COM4') {
     enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName);
     enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName);
     enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName);
-    enqueueRadioFrequencyIfChanged(4, 0, data.adfActiveFreq1, portName);
+    const adfOn = permanentValues['ADF_STATE'] ?? 0;
+    enqueueRadioFrequencyIfChanged(4, 0, adfOn ? data.adfActiveFreq1 : 0, portName, false, 0, false);
+    const xpdrOn = permanentValues['TRANSPONDER_STATE'] ?? 0;
+    enqueueRadioFrequencyIfChanged(4, 1, xpdrOn ? data.transponderCode : 0, portName, false, xpdrOn ? 4 : 0, false);
 }
 
 function enqueueAllRadioFrequencies(data, portName = 'COM4') {
@@ -594,7 +609,10 @@ function enqueueAllRadioFrequencies(data, portName = 'COM4') {
     enqueueRadioFrequencyIfChanged(2, 1, data.navStandbyFreq1, portName, true);
     enqueueRadioFrequencyIfChanged(3, 0, data.navActiveFreq2, portName, true);
     enqueueRadioFrequencyIfChanged(3, 1, data.navStandbyFreq2, portName, true);
-    enqueueRadioFrequencyIfChanged(4, 0, data.adfActiveFreq1, portName, true, 'ADF');
+    const adfOn = permanentValues['ADF_STATE'] ?? 0;
+    enqueueRadioFrequencyIfChanged(4, 0, adfOn ? data.adfActiveFreq1 : 0, portName, true, 0, false);
+    const xpdrOn = permanentValues['TRANSPONDER_STATE'] ?? 0;
+    enqueueRadioFrequencyIfChanged(4, 1, xpdrOn ? data.transponderCode : 0, portName, true, xpdrOn ? 4 : 0, false);
 }
 
 function scheduleRadioSync(portName = 'COM4') {
@@ -615,7 +633,7 @@ function scheduleRadioSync(portName = 'COM4') {
     }, RADIO_STARTUP_SYNC_DELAY_MS);
 }
 
-function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4', force = false, type = 'RADIO') {
+function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4', force = false, forceDigits = 0, useDot = true) {
     const key = `${portName}:${line}:${display}`;
     const numericValue = Number(value);
     const pendingValue = queuedRadioFrequencyValues.get(key);
@@ -632,7 +650,7 @@ function enqueueRadioFrequencyIfChanged(line, display, value, portName = 'COM4',
     if (existingIndex >= 0) {
         writeQueue[existingIndex].value = numericValue;
     } else {
-        writeQueue.push({ key, line, display, value: numericValue, portName });
+        writeQueue.push({ key, line, display, value: numericValue, portName, forceDigits, useDot });
     }
 
     startFlushingQueue();
@@ -650,17 +668,24 @@ function startFlushingQueue() {
             flushingInterval = null;
             return;
         }
-        const { key, line, display, value, portName } = writeQueue.shift();
+        const { key, line, display, value, portName, forceDigits, useDot } = writeQueue.shift();
         queuedRadioFrequencyValues.delete(key);
-        writeRadioFrequency(line, display, value, portName);
+        writeRadioFrequency(line, display, value, portName, forceDigits, useDot);
         lastWrittenRadioFrequencies.set(key, value);
     }, RADIO_WRITE_INTERVAL_MS);
 }
 
-function writeRadioFrequency(line, display, value, portName = 'COM4') {
-    const control = line + 16*display;
-    const valueString = '' + value;
+function writeRadioFrequency(line, display, value, portName = 'COM4', forceDigits = 0, useDot = true) {
+    const control = line + 16*display + (useDot ? 256 : 0);
+    let valueString = '' +  value;
+    if (valueString === '0') {
+        valueString = '';
+    }
+    if (forceDigits > 0) {
+        valueString = valueString.padStart(forceDigits, '0');
+    }
     const hexString = '0x' + valueString.padStart(7, 'F') + 'F';
+
     // logger.spam('hexString : ' + hexString);
     const encodedValue = Number.parseInt(hexString);
 
@@ -862,6 +887,11 @@ if(USE_ARDUINO){
                     break;
             }
         });
+    });
+
+    muxValues[-1] = [];
+    hardwareConfig.CustomPins.forEach(pin => {
+        muxValues[-1].push(0);
     });
 
     hardwareConfig.MUXs.forEach(mux => {

@@ -1,10 +1,12 @@
 #include <LedControl.h>
 
+#define INTENSITY 8
+
 LedControl lc1 = LedControl(2, 4, 3, 2);
 LedControl lc2 = LedControl(5, 7, 6, 2);
 LedControl lc3 = LedControl(8, 10, 9, 2);
 LedControl lc4 = LedControl(11, 13, 12, 2);
-LedControl lc5 = LedControl(A0, A2, A1, 1);
+LedControl lc5 = LedControl(A0, A2, A1, 2);
 LedControl *controls[] = {&lc1, &lc2, &lc3, &lc4, &lc5};
 int cN = 5;
 char serialBuffer[32];
@@ -51,22 +53,23 @@ void loop() {
 
 void display(unsigned long control, unsigned long value) {
     int ci = control & 0xF;
+    int useDot = control & 0x100;
 
     if (ci < 0 || ci >= cN) return;
 
-    displayOnLc(*controls[ci], control, value);
+    displayOnLc(*controls[ci], control, value, useDot);
 }
 
 long value[] = {0, 0, 0, 0, 0, 0};
 
-void displayOnLc(LedControl lc, unsigned long control, unsigned long value) {
+void displayOnLc(LedControl lc, unsigned long control, unsigned long value, int useDot) {
     int di = (control >> 4) & 0xF;
     lc.shutdown(di, false);
-    lc.setIntensity(di, 15);
+    lc.setIntensity(di, INTENSITY);
     // lc.clearDisplay(di);
     for (int i = 0; i < 8; i++) {
         int val = (value >> i*4) & 0xF;
-        int dp = i == 4;
+        int dp = i == 4 && useDot;
         if (val == 0xF) lc.setChar(di, i, ' ', dp);
         else lc.setDigit(di, i, val, dp);
     }
@@ -78,14 +81,28 @@ void initLc(LedControl lc) {
         lc.shutdown(d, false);
         lc.shutdown(d, false);
         lc.shutdown(d, false);
-        lc.setIntensity(d, 15);
-        lc.setIntensity(d, 15);
-        lc.setIntensity(d, 15);
-        lc.setIntensity(d, 15);
+        lc.setIntensity(d, INTENSITY);
+        lc.setIntensity(d, INTENSITY);
+        lc.setIntensity(d, INTENSITY);
+        lc.setIntensity(d, INTENSITY);
         // lc.clearDisplay(d);
 
         for (int digit = 0; digit < 8; digit++) {
             lc.setDigit(d, digit, 0, false);
         }
     }
+}
+
+void printMessagePrefix() {
+  Serial.print("{\"action\":\"message\",\"message\":\"");
+}
+
+void printMessageSuffix() {
+  Serial.println("\"}");
+}
+
+void printMessage(char *str) {
+  printMessagePrefix();
+  Serial.print(str);
+  printMessageSuffix();
 }

@@ -279,16 +279,52 @@
                     "type": "empty"
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "numValues": 8,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "XPNDR_SET",
+                    "key": "XPNDR_SET_1000",
+                    "multiplier": 1000,
+                    "places": [1000, 100, 10, 1],
+                    "convertToBCD": true
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "numValues": 8,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "XPNDR_SET",
+                    "key": "XPNDR_SET_100",
+                    "multiplier": 100,
+                    "places": [1000, 100, 10, 1],
+                    "convertToBCD": true
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "numValues": 8,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "XPNDR_SET",
+                    "key": "XPNDR_SET_10",
+                    "multiplier": 10,
+                    "places": [1000, 100, 10, 1],
+                    "convertToBCD": true
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "numValues": 8,
+                    "startAt": 0,
+                    "min": 1000,
+                    "max": 20,
+                    "eventString": "XPNDR_SET",
+                    "key": "XPNDR_SET_1",
+                    "multiplier": 1,
+                    "places": [1000, 100, 10, 1],
+                    "convertToBCD": true
                 },
                 {
                     "type": "analog",
@@ -375,6 +411,16 @@
             "eventString": "ELEV_TRIM_DN",
             "activeOn": 0,
             "multiplier": 10
+        }
+    ],
+    "CustomPins" : [
+        {
+            "type": "digital",
+            "permanentValueKey": "TRANSPONDER_STATE"
+        },
+        {
+            "type": "digital",
+            "permanentValueKey": "ADF_STATE"
         }
     ]
 }

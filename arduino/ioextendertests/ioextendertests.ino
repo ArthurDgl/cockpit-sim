@@ -22,6 +22,9 @@ const int selectPins[4] = {52, 51, 50, 49};
 const uint8_t muxPins[] = {A0, A1};
 #define MUX_n 2
 
+const int customPins[2] = {42, 43};
+const int customPinsN = 2;
+
 volatile bool PinExtenderInterrupt = false;
 uint8_t usedAddresses = 0;
 
@@ -83,6 +86,10 @@ void setup() {
   for (int i = 0; i < MUX_n; i++) {
     pinMode(muxPins[i], INPUT_PULLUP);
   }
+
+  for (int i = 0; i < customPinsN; i++) {
+    pinMode(customPins[i], INPUT_PULLUP);
+  }
 }
 
 void handlePinExtenderInterrupt() {
@@ -106,7 +113,18 @@ void loop() {
     
     readMux(0);
     readMux(1);
+
+    readCustomPins();
   }
+}
+
+void readCustomPins() {
+  Serial.print("{\"action\":\"CustomPins\",\"values\":[");
+  for (int i = 0; i < customPinsN; i++) {
+    Serial.print(digitalRead(customPins[i]));
+    if (i < customPinsN - 1) Serial.print(",");
+  }
+  Serial.println("]}");
 }
 
 void readMux(int mux_offset) {
