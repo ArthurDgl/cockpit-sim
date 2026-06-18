@@ -198,6 +198,7 @@ function intToBcd32(value, isBCD16 = false) {
 
 let lastSendTime = Date.now();
 const minElapsedTime = 30;
+let counter = 0;
 function trySendingSimData(simData) {
     executeReceivedCallbacks();
 
@@ -208,11 +209,15 @@ function trySendingSimData(simData) {
     if (elapsed < minElapsedTime) return;
     lastSendTime = now;
 
+    counter++;
+    counter %= 20;
+
     const data = preparePlaneData(simData);
     emitOnIo('planeData', data);
 
     writeRadioFrequencies(data, 'COM4');
     scheduleRadioSync('COM4');
+    if (counter == 0) sendTimesToArduino(data, 'COM5');
 }
 
 let simulationData = {};
@@ -269,6 +274,7 @@ if (USE_SIM) {
         handle.addToDataDefinition(DEFINITION_1, 'NAV OBS:2', 'degrees', SimConnectDataType.INT32);
         handle.addToDataDefinition(DEFINITION_1, 'SUCTION PRESSURE', 'Inches of Mercury', SimConnectDataType.FLOAT64);
         handle.addToDataDefinition(DEFINITION_1, 'ELECTRICAL BATTERY BUS AMPS', 'Amperes', SimConnectDataType.FLOAT64);
+        handle.addToDataDefinition(DEFINITION_1, 'ZULU TIME', 'seconds', SimConnectDataType.INT32);
 
         //7 segments
         handle.addToDataDefinition(DEFINITION_1, 'ELEVATOR TRIM POSITION', 'degrees', SimConnectDataType.FLOAT64);
@@ -316,6 +322,7 @@ if (USE_SIM) {
                         navOBS2: recvSimObjectData.data.readInt32(), // Int 32
                         suction: recvSimObjectData.data.readFloat64(),
                         ammeter: recvSimObjectData.data.readFloat64(),
+                        zuluTime: recvSimObjectData.data.readInt32(), // Int 32
 
                         elevTrim: recvSimObjectData.data.readFloat64(),
                         comActiveFreq1: recvSimObjectData.data.readFloat64(),
@@ -462,17 +469,21 @@ if (USE_SIM) {
             const pinConfig = muxId == -1 ? hardwareConfig.CustomPins[pinId] : hardwareConfig.MUXs.find(mux => mux.id == muxId).pins[pinId];
             if (pinConfig.type === 'empty') return;
 
+            // if (pinConfig.eventString === 'CABIN_LIGHTS_SET') {
+            //     logger.spam('CABIN_LIGHTS_SET with value: ' + newValue);
+            // }
+
             const [min, max] = [pinConfig.min ?? 0, pinConfig.max ?? 1];
             const normValue = (newValue - min) / (max - min);
             const digitalValue = normValue > 0.5 ? 1 : 0;
 
             if (pinConfig.type === 'digital' && pinConfig.eventString) {
-                if (pinConfig.activeOn !== digitalValue) return;
+                if (pinConfig.activeOn !== 2 && pinConfig.activeOn !== digitalValue) return;
 
-                if (typeof oldValue !== 'undefined') {
-                    const oldDigitalValue = ((oldValue - min) / (max - min)) > 0.5 ? 1 : 0;
-                    if (oldDigitalValue === digitalValue) return;
-                }
+                // if (typeof oldValue !== 'undefined') {
+                //     const oldDigitalValue = ((oldValue - min) / (max - min)) > 0.5 ? 1 : 0;
+                //     if (oldDigitalValue === digitalValue) return;
+                // }
 
                 const multiplier = pinConfig.multiplier ?? 1;
                 
@@ -500,6 +511,14 @@ if (USE_SIM) {
                         // logger.spam('Converted to BCD32: ' + fullValue.toString(16));
                     }
                     sendEventData(pinConfig.eventString, fullValue);
+                }
+
+                if (!pinConfig.places) {
+                    let fullValue = value * (pinConfig.eventMultiplier ?? 1);
+                    if (pinConfig.eventMin) fullValue = Math.max(fullValue, pinConfig.eventMin);
+                    if (pinConfig.eventMax) fullValue = Math.min(fullValue, pinConfig.eventMax);
+                    sendEventData(pinConfig.eventString, fullValue >>> 0);
+                    // logger.spam(newValue);
                 }
             }
         }
@@ -546,7 +565,8 @@ if (USE_SIM) {
                 const previousValues = muxValues[muxId];
 
                 pinValues.forEach((value, i) => {
-                    if (value != previousValues[i]) {
+                    const changed = muxId == -1 ? previousValues[i] !== value : Math.abs(value - previousValues[i]) > 2;
+                    if (changed) {
                         const oldValue = previousValues[i];
                         previousValues[i] = value;
                         muxValueChange(muxId, i, value, oldValue);
@@ -561,6 +581,13 @@ if (USE_SIM) {
     .catch(function (error) {
         logger.error('Connection failed: ' + error);
     });
+}
+
+function sendTimesToArduino(data, portName = 'COM5') {
+    const zuluTime = data.zuluTime ?? 0;
+    const localTime = data.time ?? 0;
+    setTimeout(() => writeIntegerToSerialPort(zuluTime, portName), 50);
+    setTimeout(() => writeIntegerToSerialPort(localTime + 0x8000, portName), 150);
 }
 
 const RADIO_WRITE_INTERVAL_MS = 25;

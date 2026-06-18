@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include "rgb_lcd.h"
 
 #define IODIRA 0x00
 #define IODIRB 0x01
@@ -27,6 +28,8 @@ const int customPinsN = 2;
 
 volatile bool PinExtenderInterrupt = false;
 uint8_t usedAddresses = 0;
+
+rgb_lcd lcd;
 
 void setup() {
   Serial.begin(115200);
@@ -90,6 +93,8 @@ void setup() {
   for (int i = 0; i < customPinsN; i++) {
     pinMode(customPins[i], INPUT_PULLUP);
   }
+
+  initLCD();
 }
 
 void handlePinExtenderInterrupt() {
@@ -98,6 +103,8 @@ void handlePinExtenderInterrupt() {
 
 unsigned long last_blink = 0;
 
+long zulutime = 0;
+long localtime = 0;
 void loop() {
   if (PinExtenderInterrupt) {
     PinExtenderInterrupt = false;
@@ -108,14 +115,54 @@ void loop() {
     }
   }
 
-  if (millis() - last_blink > 50) {
+  if (Serial.available() > 0) {
+    long received = Serial.parseInt();
+    while (Serial.available() > 0) {
+      Serial.read();
+    }
+
+    if (received & 0x8000) localtime = received - 0x8000;
+    else zulutime = received;
+  }
+
+  if (millis() - last_blink > 100) {
     last_blink = millis();
     
     readMux(0);
     readMux(1);
 
     readCustomPins();
+
+    printlcdscreen("ZULU:   ",0,0);
+    printTime(zulutime,8,0);
+
+    printlcdscreen("LOCAL:",0,1);
+    printTime(localtime,8,1);
   }
+}
+
+void initLCD() {
+    lcd.begin(16, 2);
+    lcd.clear();
+}
+
+void printlcdscreen(char* message, int column , int row){
+    lcd.setCursor(0, row);
+    lcd.print("                ");  // Clear line
+    lcd.setCursor(column, row);
+    lcd.print(message);
+}
+
+void printTime(int totalSeconds, int column, int row) {
+    uint32_t hours   =  totalSeconds / 3600;
+    uint32_t minutes = (totalSeconds % 3600) / 60;
+    uint32_t seconds =  totalSeconds % 60;
+ 
+    char timeStr[9];   // "HH:MM:SS" + null terminator
+    sprintf(timeStr, "%02lu:%02lu:%02lu", hours, minutes, seconds);
+ 
+    lcd.setCursor(column, row);
+    lcd.print(timeStr);
 }
 
 void readCustomPins() {

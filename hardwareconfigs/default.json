@@ -241,25 +241,53 @@
                     "type": "empty"
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "LANDING_LIGHTS_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "TAXI_LIGHTS_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "BEACON_LIGHTS_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "STROBES_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "NAV_LIGHTS_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "CABIN_LIGHTS_SET",
+                    "min": 12,
+                    "max": 1020
                 },
                 {
-                    "type": "empty"
+                    "type": "digital",
+                    "activeOn": 2,
+                    "eventString": "PARKING_BRAKE_SET",
+                    "min": 12,
+                    "max": 1020
                 }
             ]
         },
@@ -267,16 +295,40 @@
             "id": 1,
             "pins": [
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "eventString": "ELEVATOR_TRIM_SET",
+                    "min": 500,
+                    "max": 1000,
+                    "eventMultiplier": 16300,
+                    "eventMin": -16382,
+                    "eventMax": 16382
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "eventString": "MIXTURE_SET",
+                    "min": 20,
+                    "max": 1000,
+                    "eventMultiplier": 16300,
+                    "eventMin": 0,
+                    "eventMax": 16382
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "eventString": "ANTI_ICE_GRADUAL_SET",
+                    "min": 20,
+                    "max": 1000,
+                    "eventMultiplier": 16300,
+                    "eventMin": 0,
+                    "eventMax": 16382
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "min": 15,
+                    "max": 250,
+                    "eventString": "FLAPS_SET",
+                    "eventMultiplier": 16000,
+                    "eventMin": 0,
+                    "eventMax": 16382
                 },
                 {
                     "type": "analog",
