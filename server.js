@@ -394,11 +394,14 @@ if (USE_SIM) {
         }
 
         processRotaryEncoderValue = (pin, value) => {
-            // logger.spam(`Rotary encoder value changed for ${pin.key}: ${value}`);
+            logger.spam(`Rotary encoder value changed for ${pin.key}: ${value}`);
+            const multiplier = pin.eventMultiplier ?? 1;
             if (pin.eventString) {
-                const multiplier = pin.eventMultiplier ?? 1;
                 const fullValue = getFullRotaryEncoderValue(pin);
                 sendEventData(pin.eventString, fullValue * multiplier);
+            }
+            else {
+                sendEventData(pin.key, value * multiplier);
             }
         }
 
@@ -441,16 +444,17 @@ if (USE_SIM) {
                 })
             });
 
-            synchronizeRotaryEncoderValues();
+            synchronizeRotaryEncoderValues(true);
         }
 
-        function synchronizeRotaryEncoderValues() {
+        function synchronizeRotaryEncoderValues(start = false) {
             // logger.info('Synchronizing rotary encoder values...');
             hardwareConfig.PinExtenders.forEach(extender => {
                 extender.pins.forEach(pin => {
-                    if (!pin.eventString) return;
+                    if (pin.type === 'empty') return;
+                    const eventString = pin.eventString ?? pin.key;
+                    if (start) registerClientEvent(eventString);
 
-                    registerClientEvent(pin.eventString);
                     if (rotaryEncoderValuesInit[pin.key]) {
                         executeOnNextReceive(() => executeOnNextReceive(() => {
                             const { source, multiplier, mod, roundAt } = rotaryEncoderValuesInit[pin.key];
@@ -559,6 +563,7 @@ if (USE_SIM) {
             }
             else if (command === 'MuxPinValue' || command === 'CustomPins') {
                 // logger.spam('received data from mux : ' + JSON.stringify(data));
+                // if (command === 'CustomPins') logger.spam('received data from custom pins : ' + JSON.stringify(data));
                 const pinValues = data.values;
                 const muxId = data.id ?? -1;
 
@@ -863,13 +868,14 @@ if(USE_ARDUINO){
     function processLine(line) {
         // logger.spam(`Received serial line: ${line}`);
         let data;
-
+        
         try {
             data = JSON.parse(line);
         } catch (error) {
             logger.warn(`Ignoring malformed serial line: ${line}`);
             return;
         }
+        // logger.spam(`Received message: ${JSON.stringify(data)}`);
 
         if (!data) return;
 
@@ -935,6 +941,7 @@ if(USE_ARDUINO){
         config.pins.forEach((pin, i) => {
             switch(pin.type) {
                 case "ROT":
+                    // logger.spam(`Pin ${pin.key} (signal ${pin.signal}) changed to ${binString[i]}`);
                     let oldA;
                     if (pin.signal === 'A') {
                         oldA = rotaryEncoderValues[pin.key].A;
@@ -945,7 +952,7 @@ if(USE_ARDUINO){
                         const changeA = Math.abs(oldA - newValue);
                         if (changeA == 1) {
                             rotaryEncodersToUpdate.push(pin);
-                        } 
+                        }
                     }
                     break;
                 case "empty":

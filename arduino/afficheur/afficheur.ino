@@ -1,12 +1,13 @@
 #include <LedControl.h>
 
-#define INTENSITY 8
+#define INTENSITY 1
+
 
 LedControl lc1 = LedControl(2, 4, 3, 2);
 LedControl lc2 = LedControl(5, 7, 6, 2);
 LedControl lc3 = LedControl(8, 10, 9, 2);
 LedControl lc4 = LedControl(11, 13, 12, 2);
-LedControl lc5 = LedControl(A0, A2, A1, 2);
+LedControl lc5 = LedControl(A3, A4, A5, 2);
 LedControl *controls[] = {&lc1, &lc2, &lc3, &lc4, &lc5};
 int cN = 5;
 char serialBuffer[32];

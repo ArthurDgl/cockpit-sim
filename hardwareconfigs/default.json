@@ -113,25 +113,43 @@
                     "key": "NAV2_STBY_SET_HZ_1"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "VOR2_SET",
+                    "mod": 360,
+                    "min": 0,
+                    "max": 360
+                },
+                {
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "VOR2_SET"
+                },
+                {
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "VOR2_SET"
                 },
                 {
                     "type": "empty"
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "A",
+                    "key": "VOR1_SET",
+                    "mod": 360,
+                    "min": 0,
+                    "max": 360
                 },
                 {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "B",
+                    "key": "VOR1_SET"
                 },
                 {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
-                },
-                {
-                    "type": "empty"
+                    "type": "ROT",
+                    "signal": "C",
+                    "key": "VOR1_SET"
                 },
                 {
                     "type": "ROT",
@@ -278,7 +296,7 @@
                 {
                     "type": "digital",
                     "activeOn": 2,
-                    "eventString": "CABIN_LIGHTS_SET",
+                    "eventString": "PITOT_HEAT_SET",
                     "min": 12,
                     "max": 1020
                 },
@@ -431,7 +449,13 @@
                     "type": "empty"
                 },
                 {
-                    "type": "empty"
+                    "type": "analog",
+                    "eventString": "AXIS_THROTTLE_SET",
+                    "min": 510,
+                    "max": 1000,
+                    "eventMultiplier": 16300,
+                    "eventMin": -16382,
+                    "eventMax": 16382
                 }
             ]
         }
@@ -468,11 +492,20 @@
     "CustomPins" : [
         {
             "type": "digital",
-            "permanentValueKey": "TRANSPONDER_STATE"
+            "permanentValueKey": "ADF_STATE"
         },
         {
             "type": "digital",
-            "permanentValueKey": "ADF_STATE"
+            "permanentValueKey": "TRANSPONDER_STATE"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
+        },
+        {
+            "type": "empty"
         }
     ]
 }

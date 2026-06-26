@@ -20,11 +20,11 @@
 
 const int selectPins[4] = {52, 51, 50, 49};
 
-const uint8_t muxPins[] = {A0, A1};
+const uint8_t muxPins[] = {A5, A6};
 #define MUX_n 2
 
-const int customPins[2] = {42, 43};
-const int customPinsN = 2;
+const int customPins[5] = {30, 38, 13, 7, 27};
+const int customPinsN = 5;
 
 volatile bool PinExtenderInterrupt = false;
 uint8_t usedAddresses = 0;
